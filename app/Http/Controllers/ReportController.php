@@ -10,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\MonthlyReportExport;
 use App\Exports\BulkReportExport;
+use Carbon\Carbon;
 
 class ReportController extends Controller
 {
@@ -130,7 +131,7 @@ class ReportController extends Controller
         if ($exists) {
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['error' => 'Data laporan sudah ada.']);
+                ->withErrors(['error' => 'Laporan sudah ada.']);
         }
 
         $report = MonthlyReport::create($request->all());
@@ -149,9 +150,8 @@ class ReportController extends Controller
         $totalExpenses = $report->transactions->sum('amount');
         $remainingLimit = $report->credit_limit - $totalExpenses;
 
-        // LOGIKA BARU: Hitung batas tanggal awal dan akhir bulan
-        $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->format('Y-m-d');
-        $endDate = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth()->format('Y-m-d');
+        $startDate = Carbon::createFromDate($year, $month, 1)->format('Y-m-d');
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->format('Y-m-d');
 
         return view('reports.show', compact('report', 'totalExpenses', 'remainingLimit', 'startDate', 'endDate'));
     }
@@ -162,7 +162,7 @@ class ReportController extends Controller
         $report->transactions()->delete();
         $report->delete();
 
-        return redirect()->route('reports.index')->with('success', 'Laporan berhasil dihapus.');
+        return redirect()->route('reports.index')->with('success', 'Laporan dihapus.');
     }
 
     public function storeTransaction(Request $request, $id)
@@ -183,13 +183,13 @@ class ReportController extends Controller
             'amount' => $request->amount,
         ]);
 
-        return redirect()->back()->with('success', 'Transaksi berhasil disimpan.');
+        return redirect()->back()->with('success', 'Transaksi disimpan.');
     }
 
     public function destroyTransaction($id)
     {
         Transaction::findOrFail($id)->delete();
-        return redirect()->back()->with('success', 'Transaksi berhasil dihapus.');
+        return redirect()->back()->with('success', 'Transaksi dihapus.');
     }
 
     public function exportPdf($year, $month, $slug)
