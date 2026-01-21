@@ -6,23 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
 {
     Schema::create('credit_cards', function (Blueprint $table) {
         $table->id();
-        // Menghubungkan kartu ke direksi
         $table->foreignId('director_id')->constrained('directors')->onDelete('cascade');
-        $table->string('card_number');  // Nomor Kartu
+        $table->string('card_number');
         $table->timestamps();
     });
 }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('credit_cards');

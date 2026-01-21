@@ -17,7 +17,6 @@ class BulkReportExport implements WithMultipleSheets
     {
         $sheets = [];
 
-        // Loop setiap ID laporan yang dipilih, buatkan sheet-nya
         foreach ($this->ids as $id) {
             $sheets[] = new MonthlyReportExport($id);
         }

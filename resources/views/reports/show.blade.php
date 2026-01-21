@@ -36,11 +36,9 @@
         th { text-align: left; padding: 10px 12px; color: var(--text-muted); font-weight: 600; font-size: 12px; border-bottom: 1px solid var(--border); background: #FBFBFA; }
         td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; height: 32px; }
         
-        /* FIX FOR INPUTS */
         .input-row td { padding: 0; border-bottom: none; background: #fff; }
         .input-clean { width: 100%; height: 100%; padding: 12px; border: none; font-family: inherit; font-size: 14px; background: transparent; box-sizing: border-box; transition: box-shadow 0.2s; position: relative; }
         
-        /* Agar saat fokus input naik ke atas & border menyala */
         .input-clean:focus { background: #fff; outline: none; box-shadow: inset 0 0 0 2px var(--blue); z-index: 2; }
         .input-clean::placeholder { color: #BAB8B5; }
         

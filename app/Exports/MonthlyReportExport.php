@@ -6,9 +6,9 @@ use App\Models\MonthlyReport;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithTitle; // <-- Tambah Ini
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-class MonthlyReportExport implements FromView, ShouldAutoSize, WithTitle // <-- Tambah Ini
+class MonthlyReportExport implements FromView, ShouldAutoSize, WithTitle
 {
     protected $id;
 
@@ -26,11 +26,9 @@ class MonthlyReportExport implements FromView, ShouldAutoSize, WithTitle // <-- 
         return view('reports.excel', compact('report', 'totalExpenses', 'remainingLimit'));
     }
 
-    // Fungsi untuk memberi nama Tab/Sheet di Excel
     public function title(): string
     {
         $report = MonthlyReport::with('director')->find($this->id);
-        // Nama Tab: Nama Direktur (dipotong jika terlalu panjang)
         return substr($report->director->name, 0, 30);
     }
 }

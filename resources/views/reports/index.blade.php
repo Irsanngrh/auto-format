@@ -8,13 +8,11 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 40px; }
         .container { max-width: 1200px; margin: 0 auto; }
         
-        /* HEADER */
         .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
         .header h1 { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
         .btn-new { background-color: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; text-decoration: none; transition: 0.2s; }
         .btn-new:hover { background-color: #0070DA; }
 
-        /* FILTER BAR (Notion Style) */
         .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
         .filter-label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-right: 8px; display: flex; align-items: center; gap: 6px; }
         
@@ -23,18 +21,15 @@
         .filter-pill select:hover { background-color: var(--gray-hover); border-color: #C0C0C0; }
         .filter-pill select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.2); }
         
-        /* Icon panah dropdown custom */
         .filter-pill::after { content: '▼'; font-size: 8px; color: var(--text-muted); position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
 
         .bulk-actions { margin-left: auto; display: flex; gap: 8px; }
         .btn-action { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--text); font-weight: 500; }
         .btn-action:hover { background: var(--gray-hover); }
 
-        /* TABLE */
         .table-container { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         table { width: 100%; border-collapse: collapse; }
         
-        /* SORTABLE HEADERS */
         th { text-align: left; background: #FBFBFA; border-bottom: 1px solid var(--border); padding: 0; }
         th a { display: block; padding: 12px 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-decoration: none; transition: 0.2s; user-select: none; }
         th a:hover { background: #F0F0F0; color: var(--text); }
@@ -100,14 +95,13 @@
 
             <div class="bulk-actions">
                 @if($filterType == 'monthly')
-                    <button type="submit" formaction="{{ route('reports.bulk_action') }}" name="action" value="excel" class="btn-action" formmethod="POST">Unduh Excel</button>
-                    <button type="submit" formaction="{{ route('reports.bulk_action') }}" name="action" value="pdf" class="btn-action" formmethod="POST">Unduh PDF</button>
-                    @csrf 
+                    <button type="submit" form="bulk-action-form" name="action" value="excel" class="btn-action">Unduh Excel</button>
+                    <button type="submit" form="bulk-action-form" name="action" value="pdf" class="btn-action">Unduh PDF</button>
                 @endif
             </div>
         </form>
 
-        <form action="{{ route('reports.bulk_action') }}" method="POST">
+        <form id="bulk-action-form" action="{{ route('reports.bulk_action') }}" method="POST">
             @csrf
             <div class="table-container">
                 <table>
