@@ -6,22 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
-{
-    Schema::create('directors', function (Blueprint $table) {
-        $table->id();
-        $table->string('name');         // Nama Direksi
-        $table->string('position');     // Jabatan (misal: Direktur Utama)
-        $table->timestamps();
-    });
-}
+    {
+        Schema::create('directors', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->string('position');
+            $table->timestamps();
+        });
+    }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('directors');
