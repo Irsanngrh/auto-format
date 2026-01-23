@@ -20,7 +20,6 @@
         .filter-pill select { appearance: none; -webkit-appearance: none; background-color: transparent; border: 1px solid var(--border); border-radius: 100px; padding: 6px 32px 6px 12px; font-size: 13px; color: var(--text); cursor: pointer; transition: 0.2s; font-family: inherit; font-weight: 500; }
         .filter-pill select:hover { background-color: var(--gray-hover); border-color: #C0C0C0; }
         .filter-pill select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.2); }
-        
         .filter-pill::after { content: '▼'; font-size: 8px; color: var(--text-muted); position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
 
         .bulk-actions { margin-left: auto; display: flex; gap: 8px; }
@@ -49,6 +48,19 @@
         .btn-row-delete:hover { opacity: 1; text-decoration: underline; }
 
         .empty-state { padding: 60px; text-align: center; color: var(--text-muted); font-size: 14px; }
+
+        /* MODAL STYLES */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 15, 0.6); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-box { background: white; width: 320px; border-radius: 6px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid var(--border); animation: modalIn 0.2s ease-out; }
+        .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .modal-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .btn-cancel { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--text); transition: 0.2s; }
+        .btn-cancel:hover { background: var(--gray-hover); }
+        .btn-danger { background: #EB5757; border: 1px solid #EB5757; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-danger:hover { background: #C93C3C; }
+        
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -63,7 +75,6 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                 Filter:
             </div>
-
             <div class="filter-pill">
                 <select name="year" onchange="this.form.submit()">
                     @foreach($availableYears as $year)
@@ -74,7 +85,6 @@
                     @endif
                 </select>
             </div>
-
             <div class="filter-pill">
                 <select name="month" onchange="this.form.submit()">
                     <option value="">Semua Bulan</option>
@@ -83,25 +93,24 @@
                     @endforeach
                 </select>
             </div>
-
             <div class="filter-pill">
                 <select name="type" onchange="this.form.submit()">
                     <option value="monthly" {{ $filterType == 'monthly' ? 'selected' : '' }}>Tampilan Bulanan</option>
                     <option value="yearly" {{ $filterType == 'yearly' ? 'selected' : '' }}>Rekap Tahunan</option>
                 </select>
             </div>
-
-            <input type="hidden" name="sort" id="sortInput" value="{{ $sortBy }}">
+            <input type="hidden" name="sort" value="{{ $sortBy }}">
 
             <div class="bulk-actions">
                 @if($filterType == 'monthly')
-                    <button type="submit" form="bulk-action-form" name="action" value="excel" class="btn-action">Unduh Excel</button>
-                    <button type="submit" form="bulk-action-form" name="action" value="pdf" class="btn-action">Unduh PDF</button>
+                    <button type="submit" form="bulkForm" name="action" value="excel" class="btn-action">Unduh Excel</button>
+                    <button type="submit" form="bulkForm" name="action" value="pdf" class="btn-action">Unduh PDF</button>
+                    @csrf 
                 @endif
             </div>
         </form>
 
-        <form id="bulk-action-form" action="{{ route('reports.bulk_action') }}" method="POST">
+        <form action="{{ route('reports.bulk_action') }}" method="POST" id="bulkForm">
             @csrf
             <div class="table-container">
                 <table>
@@ -111,29 +120,24 @@
                                 <th style="width: 40px; text-align: center;"><input type="checkbox" onclick="toggle(this)"></th>
                             @endif
                             <th style="width: 250px;"><a href="#">Direksi</a></th>
-                            
                             <th style="width: 150px;">
                                 <a href="?year={{$filterYear}}&month={{$filterMonth}}&type={{$filterType}}&sort={{ $sortBy == 'period_desc' ? 'period_asc' : 'period_desc' }}" class="{{ str_contains($sortBy, 'period') ? 'active' : '' }}">
-                                    Periode
-                                    <span class="sort-icon">{{ $sortBy == 'period_desc' ? '↓' : ($sortBy == 'period_asc' ? '↑' : '') }}</span>
+                                    Periode <span class="sort-icon">{{ $sortBy == 'period_desc' ? '↓' : ($sortBy == 'period_asc' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
                                 <a href="?year={{$filterYear}}&month={{$filterMonth}}&type={{$filterType}}&sort={{ $sortBy == 'pagu_high' ? 'pagu_low' : 'pagu_high' }}" class="{{ str_contains($sortBy, 'pagu') ? 'active' : '' }}">
-                                    Pagu Awal
-                                    <span class="sort-icon">{{ $sortBy == 'pagu_high' ? '↓' : ($sortBy == 'pagu_low' ? '↑' : '') }}</span>
+                                    Pagu Awal <span class="sort-icon">{{ $sortBy == 'pagu_high' ? '↓' : ($sortBy == 'pagu_low' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
                                 <a href="?year={{$filterYear}}&month={{$filterMonth}}&type={{$filterType}}&sort={{ $sortBy == 'realisasi_high' ? 'realisasi_low' : 'realisasi_high' }}" class="{{ str_contains($sortBy, 'realisasi') ? 'active' : '' }}">
-                                    Realisasi
-                                    <span class="sort-icon">{{ $sortBy == 'realisasi_high' ? '↓' : ($sortBy == 'realisasi_low' ? '↑' : '') }}</span>
+                                    Realisasi <span class="sort-icon">{{ $sortBy == 'realisasi_high' ? '↓' : ($sortBy == 'realisasi_low' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
                                 <a href="?year={{$filterYear}}&month={{$filterMonth}}&type={{$filterType}}&sort={{ $sortBy == 'sisa_high' ? 'sisa_low' : 'sisa_high' }}" class="{{ str_contains($sortBy, 'sisa') ? 'active' : '' }}">
-                                    Sisa Pagu
-                                    <span class="sort-icon">{{ $sortBy == 'sisa_high' ? '↓' : ($sortBy == 'sisa_low' ? '↑' : '') }}</span>
+                                    Sisa Pagu <span class="sort-icon">{{ $sortBy == 'sisa_high' ? '↓' : ($sortBy == 'sisa_low' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th></th>
@@ -147,12 +151,10 @@
                             @elseif($filterType == 'monthly')
                                 <td></td>
                             @endif
-
                             <td>
                                 <div style="font-weight: 500;">{{ $report->director->name }}</div>
                                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">{{ $report->director->position }}</div>
                             </td>
-                            
                             <td>
                                 @if($report->is_aggregate)
                                     <span class="status-badge">Tahun {{ $report->year }}</span>
@@ -160,15 +162,13 @@
                                     <span class="status-badge">{{ $report->month_name }} {{ $report->year }}</span>
                                 @endif
                             </td>
-
                             <td class="amount-text">Rp {{ number_format($report->credit_limit, 0, ',', '.') }}</td>
                             <td class="amount-text">Rp {{ number_format($report->total_expenses, 0, ',', '.') }}</td>
                             <td class="amount-text" style="color: {{ $report->remaining_limit < 0 ? '#EB5757' : 'inherit' }}">Rp {{ number_format($report->remaining_limit, 0, ',', '.') }}</td>
-                            
                             <td class="row-actions" style="text-align: right;">
                                 @if(!$report->is_aggregate)
                                     <a href="{{ route('reports.show', ['year' => $report->year, 'month' => $report->month, 'slug' => $report->director->slug]) }}">Buka</a>
-                                    <button type="button" class="btn-row-delete" onclick="confirmDelete('{{ $report->id }}')">Hapus</button>
+                                    <button type="button" class="btn-row-delete" onclick="openModal('del-form-{{ $report->id }}')">Hapus</button>
                                 @endif
                             </td>
                         </tr>
@@ -191,15 +191,44 @@
         @endif
     @endforeach
 
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">Hapus Laporan?</div>
+            <div class="modal-desc">Tindakan ini tidak dapat dibatalkan. Data laporan beserta seluruh transaksi di dalamnya akan dihapus permanen.</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Batal</button>
+                <button type="button" id="confirmBtn" class="btn-danger">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        let formToDelete = null;
+
         function toggle(source) {
             checkboxes = document.getElementsByName('report_ids[]');
             for(var i=0, n=checkboxes.length;i<n;i++) { checkboxes[i].checked = source.checked; }
         }
-        function confirmDelete(id) {
-            if(confirm('Hapus laporan ini permanen?')) {
-                document.getElementById('del-form-' + id).submit();
+
+        function openModal(formId) {
+            formToDelete = formId;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            formToDelete = null;
+        }
+
+        document.getElementById('confirmBtn').onclick = function() {
+            if (formToDelete) {
+                document.getElementById(formToDelete).submit();
             }
+        };
+
+        // Close modal when clicking outside box
+        document.getElementById('deleteModal').onclick = function(e) {
+            if (e.target === this) closeModal();
         }
     </script>
 </body>

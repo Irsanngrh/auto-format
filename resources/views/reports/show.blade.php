@@ -38,7 +38,6 @@
         
         .input-row td { padding: 0; border-bottom: none; background: #fff; }
         .input-clean { width: 100%; height: 100%; padding: 12px; border: none; font-family: inherit; font-size: 14px; background: transparent; box-sizing: border-box; transition: box-shadow 0.2s; position: relative; }
-        
         .input-clean:focus { background: #fff; outline: none; box-shadow: inset 0 0 0 2px var(--blue); z-index: 2; }
         .input-clean::placeholder { color: #BAB8B5; }
         
@@ -47,6 +46,18 @@
 
         .btn-del { border: none; background: none; color: #D3D1CB; cursor: pointer; font-size: 16px; }
         .btn-del:hover { color: #EB5757; }
+
+        /* MODAL CSS */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 15, 0.6); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-box { background: white; width: 320px; border-radius: 6px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid var(--border); animation: modalIn 0.2s ease-out; }
+        .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .modal-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .btn-cancel { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--text); transition: 0.2s; }
+        .btn-cancel:hover { background: var(--gray); }
+        .btn-danger { background: #EB5757; border: 1px solid #EB5757; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-danger:hover { background: #C93C3C; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -67,10 +78,8 @@
             <div class="properties">
                 <div class="prop-label">Jabatan</div>
                 <div class="prop-value">{{ $report->director->position }}</div>
-                
                 <div class="prop-label">Periode</div>
                 <div class="prop-value"><span class="tag">{{ $report->month_name }} {{ $report->year }}</span></div>
-                
                 <div class="prop-label">Kartu</div>
                 <div class="prop-value" style="font-family: 'SF Mono', monospace;">
                     @foreach($report->director->creditCards as $card)
@@ -119,7 +128,7 @@
                         <td style="text-align: right; font-family: 'SF Mono', monospace;">{{ number_format($trx->amount, 0, ',', '.') }}</td>
                         <td style="text-align: right; font-family: 'SF Mono', monospace; color: #9B9A97;">{{ number_format($balance, 0, ',', '.') }}</td>
                         <td style="text-align: center;">
-                            <button type="submit" form="del-trx-{{$trx->id}}" class="btn-del" onclick="return confirm('Hapus?')">×</button>
+                            <button type="button" class="btn-del" onclick="openModal('del-trx-{{$trx->id}}')">×</button>
                         </td>
                     </tr>
                     @endforeach
@@ -150,6 +159,17 @@
         </form>
     @endforeach
 
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">Hapus Transaksi?</div>
+            <div class="modal-desc">Data transaksi ini akan dihapus permanen dari laporan.</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Batal</button>
+                <button type="button" id="confirmBtn" class="btn-danger">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         var trxInput = document.getElementById("trxAmount");
         trxInput.addEventListener("keyup", function(e) { trxInput.value = formatRupiah(this.value); });
@@ -157,6 +177,23 @@
             var number_string = angka.replace(/[^,\d]/g, "").toString(), split = number_string.split(","), sisa = split[0].length % 3, rupiah = split[0].substr(0, sisa), ribuan = split[0].substr(sisa).match(/\d{3}/gi);
             if (ribuan) { separator = sisa ? "." : ""; rupiah += separator + ribuan.join("."); }
             return split[1] != undefined ? rupiah + "," + split[1] : rupiah;
+        }
+
+        // Modal Logic
+        let formToDelete = null;
+        function openModal(formId) {
+            formToDelete = formId;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+        function closeModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            formToDelete = null;
+        }
+        document.getElementById('confirmBtn').onclick = function() {
+            if (formToDelete) { document.getElementById(formToDelete).submit(); }
+        };
+        document.getElementById('deleteModal').onclick = function(e) {
+            if (e.target === this) closeModal();
         }
     </script>
 </body>
