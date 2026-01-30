@@ -7,49 +7,37 @@
         :root { --bg: #FFFFFF; --text: #37352F; --gray-hover: #F7F7F5; --border: #E0E0E0; --text-muted: #9B9A97; --blue: #2383E2; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 40px; }
         .container { max-width: 1200px; margin: 0 auto; }
-        
         .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
         .header h1 { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
         .btn-new { background-color: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; text-decoration: none; transition: 0.2s; }
         .btn-new:hover { background-color: #0070DA; }
-
         .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
         .filter-label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-right: 8px; display: flex; align-items: center; gap: 6px; }
-        
         .filter-pill { position: relative; display: inline-block; }
         .filter-pill select { appearance: none; -webkit-appearance: none; background-color: transparent; border: 1px solid var(--border); border-radius: 100px; padding: 6px 32px 6px 12px; font-size: 13px; color: var(--text); cursor: pointer; transition: 0.2s; font-family: inherit; font-weight: 500; }
         .filter-pill select:hover { background-color: var(--gray-hover); border-color: #C0C0C0; }
         .filter-pill select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.2); }
         .filter-pill::after { content: '▼'; font-size: 8px; color: var(--text-muted); position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-
         .bulk-actions { margin-left: auto; display: flex; gap: 8px; }
         .btn-action { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--text); font-weight: 500; }
         .btn-action:hover { background: var(--gray-hover); }
-
         .table-container { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         table { width: 100%; border-collapse: collapse; }
-        
         th { text-align: left; background: #FBFBFA; border-bottom: 1px solid var(--border); padding: 0; }
         th a { display: block; padding: 12px 16px; font-size: 12px; font-weight: 600; color: var(--text-muted); text-decoration: none; transition: 0.2s; user-select: none; }
         th a:hover { background: #F0F0F0; color: var(--text); }
         th a.active { color: var(--blue); background: #EFF6FC; }
         .sort-icon { float: right; font-size: 10px; margin-top: 2px; }
-
         td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
         tr:hover { background-color: var(--gray-hover); }
-
         .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background: #E3E2E0; color: #32302C; }
         .amount-text { font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px; letter-spacing: -0.3px; }
-        
         .row-actions a { color: var(--text); text-decoration: none; margin-right: 12px; font-weight: 500; font-size: 13px; opacity: 0.6; }
         .row-actions a:hover { opacity: 1; text-decoration: underline; }
         .btn-row-delete { background: none; border: none; color: #EB5757; cursor: pointer; padding: 0; font-size: 13px; opacity: 0.6; }
         .btn-row-delete:hover { opacity: 1; text-decoration: underline; }
-
         .empty-state { padding: 60px; text-align: center; color: var(--text-muted); font-size: 14px; }
-
-        /* MODAL STYLES */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 15, 0.6); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-box { background: white; width: 320px; border-radius: 6px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid var(--border); animation: modalIn 0.2s ease-out; }
         .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
@@ -59,7 +47,6 @@
         .btn-cancel:hover { background: var(--gray-hover); }
         .btn-danger { background: #EB5757; border: 1px solid #EB5757; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: white; transition: 0.2s; }
         .btn-danger:hover { background: #C93C3C; }
-        
         @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
@@ -85,7 +72,8 @@
                     @endif
                 </select>
             </div>
-            <div class="filter-pill">
+            
+            <div class="filter-pill" style="{{ $filterType == 'yearly' ? 'opacity: 0.5; pointer-events: none;' : '' }}">
                 <select name="month" onchange="this.form.submit()">
                     <option value="">Semua Bulan</option>
                     @foreach([1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April', 5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus', 9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'] as $k => $v)
@@ -93,50 +81,59 @@
                     @endforeach
                 </select>
             </div>
+            
+            <div class="filter-pill">
+                <select name="director_id" onchange="this.form.submit()">
+                    <option value="">Semua Direksi</option>
+                    @foreach($directors as $d)
+                        <option value="{{ $d->id }}" {{ $filterDirector == $d->id ? 'selected' : '' }}>{{ $d->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             <div class="filter-pill">
                 <select name="type" onchange="this.form.submit()">
-                    <option value="monthly" {{ $filterType == 'monthly' ? 'selected' : '' }}>Tampilan Bulanan</option>
+                    <option value="monthly" {{ $filterType == 'monthly' ? 'selected' : '' }}>Rekap Bulanan</option>
                     <option value="yearly" {{ $filterType == 'yearly' ? 'selected' : '' }}>Rekap Tahunan</option>
                 </select>
             </div>
             <input type="hidden" name="sort" value="{{ $sortBy }}">
 
             <div class="bulk-actions">
-                @if($filterType == 'monthly')
-                    <button type="submit" form="bulkForm" name="action" value="excel" class="btn-action">Unduh Excel</button>
-                    <button type="submit" form="bulkForm" name="action" value="pdf" class="btn-action">Unduh PDF</button>
-                    @csrf 
-                @endif
+                <button type="submit" form="bulkForm" name="action" value="excel" class="btn-action">Unduh Excel</button>
+                <button type="submit" form="bulkForm" name="action" value="pdf" class="btn-action">Unduh PDF</button>
+                @csrf 
             </div>
         </form>
 
         <form action="{{ route('reports.bulk_action') }}" method="POST" id="bulkForm">
             @csrf
+            <input type="hidden" name="type" value="{{ $filterType }}">
+            <input type="hidden" name="year" value="{{ $filterYear }}">
+
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            @if($filterType == 'monthly')
-                                <th style="width: 40px; text-align: center;"><input type="checkbox" onclick="toggle(this)"></th>
-                            @endif
+                            <th style="width: 40px; text-align: center;"><input type="checkbox" onclick="toggle(this)"></th>
                             <th style="width: 250px;"><a href="#">Direksi</a></th>
                             <th style="width: 150px;">
-                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&type={{$filterType}}&sort={{ $sortBy == 'period_desc' ? 'period_asc' : 'period_desc' }}" class="{{ str_contains($sortBy, 'period') ? 'active' : '' }}">
+                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&director_id={{$filterDirector}}&type={{$filterType}}&sort={{ $sortBy == 'period_desc' ? 'period_asc' : 'period_desc' }}" class="{{ str_contains($sortBy, 'period') ? 'active' : '' }}">
                                     Periode <span class="sort-icon">{{ $sortBy == 'period_desc' ? '↓' : ($sortBy == 'period_asc' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
-                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&type={{$filterType}}&sort={{ $sortBy == 'pagu_high' ? 'pagu_low' : 'pagu_high' }}" class="{{ str_contains($sortBy, 'pagu') ? 'active' : '' }}">
+                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&director_id={{$filterDirector}}&type={{$filterType}}&sort={{ $sortBy == 'pagu_high' ? 'pagu_low' : 'pagu_high' }}" class="{{ str_contains($sortBy, 'pagu') ? 'active' : '' }}">
                                     Pagu Awal <span class="sort-icon">{{ $sortBy == 'pagu_high' ? '↓' : ($sortBy == 'pagu_low' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
-                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&type={{$filterType}}&sort={{ $sortBy == 'realisasi_high' ? 'realisasi_low' : 'realisasi_high' }}" class="{{ str_contains($sortBy, 'realisasi') ? 'active' : '' }}">
+                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&director_id={{$filterDirector}}&type={{$filterType}}&sort={{ $sortBy == 'realisasi_high' ? 'realisasi_low' : 'realisasi_high' }}" class="{{ str_contains($sortBy, 'realisasi') ? 'active' : '' }}">
                                     Realisasi <span class="sort-icon">{{ $sortBy == 'realisasi_high' ? '↓' : ($sortBy == 'realisasi_low' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
-                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&type={{$filterType}}&sort={{ $sortBy == 'sisa_high' ? 'sisa_low' : 'sisa_high' }}" class="{{ str_contains($sortBy, 'sisa') ? 'active' : '' }}">
+                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&director_id={{$filterDirector}}&type={{$filterType}}&sort={{ $sortBy == 'sisa_high' ? 'sisa_low' : 'sisa_high' }}" class="{{ str_contains($sortBy, 'sisa') ? 'active' : '' }}">
                                     Sisa Pagu <span class="sort-icon">{{ $sortBy == 'sisa_high' ? '↓' : ($sortBy == 'sisa_low' ? '↑' : '') }}</span>
                                 </a>
                             </th>
@@ -146,11 +143,7 @@
                     <tbody>
                         @forelse($reports as $report)
                         <tr>
-                            @if(!$report->is_aggregate)
-                                <td style="text-align: center;"><input type="checkbox" name="report_ids[]" value="{{ $report->id }}"></td>
-                            @elseif($filterType == 'monthly')
-                                <td></td>
-                            @endif
+                            <td style="text-align: center;"><input type="checkbox" name="report_ids[]" value="{{ $report->id }}"></td>
                             <td>
                                 <div style="font-weight: 500;">{{ $report->director->name }}</div>
                                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">{{ $report->director->position }}</div>
@@ -226,7 +219,6 @@
             }
         };
 
-        // Close modal when clicking outside box
         document.getElementById('deleteModal').onclick = function(e) {
             if (e.target === this) closeModal();
         }

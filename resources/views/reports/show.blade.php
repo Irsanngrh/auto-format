@@ -39,22 +39,30 @@
         .input-row td { padding: 0; border-bottom: none; background: #fff; }
         .input-clean { width: 100%; height: 100%; padding: 12px; border: none; font-family: inherit; font-size: 14px; background: transparent; box-sizing: border-box; transition: box-shadow 0.2s; position: relative; }
         .input-clean:focus { background: #fff; outline: none; box-shadow: inset 0 0 0 2px var(--blue); z-index: 2; }
-        .input-clean::placeholder { color: #BAB8B5; }
+        
+        .input-edit { width: 100%; padding: 4px 8px; border: 1px solid var(--border); border-radius: 3px; font-size: 13px; font-family: inherit; box-sizing: border-box; }
+        .input-edit:focus { outline: 2px solid var(--blue); border-color: transparent; }
+        
+        .display-mode { display: block; }
+        .edit-mode { display: none; }
+        tr.editing .display-mode { display: none; }
+        tr.editing .edit-mode { display: block; }
+
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; color: #9B9A97; transition: 0.2s; }
+        .btn-icon:hover { color: var(--text); background: var(--gray); border-radius: 3px; }
+        .btn-save { color: #219653; }
+        .btn-cancel { color: #EB5757; }
         
         .btn-add { color: #9B9A97; background: none; border: none; font-size: 14px; padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; transition: 0.2s; }
         .btn-add:hover { color: var(--text); background: var(--gray); }
 
-        .btn-del { border: none; background: none; color: #D3D1CB; cursor: pointer; font-size: 16px; }
-        .btn-del:hover { color: #EB5757; }
-
-        /* MODAL CSS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 15, 0.6); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-box { background: white; width: 320px; border-radius: 6px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid var(--border); animation: modalIn 0.2s ease-out; }
         .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
         .modal-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
-        .btn-cancel { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--text); transition: 0.2s; }
-        .btn-cancel:hover { background: var(--gray); }
+        .btn-cancel-modal { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--text); transition: 0.2s; }
+        .btn-cancel-modal:hover { background: var(--gray); }
         .btn-danger { background: #EB5757; border: 1px solid #EB5757; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: white; transition: 0.2s; }
         .btn-danger:hover { background: #C93C3C; }
         @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -74,7 +82,6 @@
 
         <div class="doc-header">
             <h1>{{ $report->director->name }}</h1>
-            
             <div class="properties">
                 <div class="prop-label">Jabatan</div>
                 <div class="prop-value">{{ $report->director->position }}</div>
@@ -115,20 +122,45 @@
                         <th>Keterangan</th>
                         <th width="160" style="text-align: right;">Nominal</th>
                         <th width="160" style="text-align: right;">Sisa Pagu</th>
-                        <th width="40"></th>
+                        <th width="80" style="text-align: center;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @php $balance = $report->credit_limit; @endphp
                     @foreach($report->transactions as $trx)
                     @php $balance -= $trx->amount; @endphp
-                    <tr>
-                        <td>{{ \Carbon\Carbon::parse($trx->transaction_date)->format('d M Y') }}</td>
-                        <td>{{ $trx->description }}</td>
-                        <td style="text-align: right; font-family: 'SF Mono', monospace;">{{ number_format($trx->amount, 0, ',', '.') }}</td>
-                        <td style="text-align: right; font-family: 'SF Mono', monospace; color: #9B9A97;">{{ number_format($balance, 0, ',', '.') }}</td>
+                    
+                    <tr id="row-{{ $trx->id }}">
+                        <td>
+                            <div class="display-mode">{{ \Carbon\Carbon::parse($trx->transaction_date)->format('d M Y') }}</div>
+                            <div class="edit-mode">
+                                <input type="date" name="transaction_date" class="input-edit" form="form-edit-{{$trx->id}}" value="{{ $trx->transaction_date }}" min="{{ $startDate }}" max="{{ $endDate }}" required>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="display-mode">{{ $trx->description }}</div>
+                            <div class="edit-mode">
+                                <input type="text" name="description" class="input-edit" form="form-edit-{{$trx->id}}" value="{{ $trx->description }}" required>
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="display-mode" style="font-family: 'SF Mono', monospace;">{{ number_format($trx->amount, 0, ',', '.') }}</div>
+                            <div class="edit-mode">
+                                <input type="text" name="amount" class="input-edit rupiah-edit" form="form-edit-{{$trx->id}}" value="{{ number_format($trx->amount, 0, ',', '.') }}" style="text-align: right;" required>
+                            </div>
+                        </td>
+                        <td style="text-align: right; font-family: 'SF Mono', monospace; color: #9B9A97;">
+                            {{ number_format($balance, 0, ',', '.') }}
+                        </td>
                         <td style="text-align: center;">
-                            <button type="button" class="btn-del" onclick="openModal('del-trx-{{$trx->id}}')">×</button>
+                            <div class="display-mode">
+                                <button type="button" class="btn-icon" onclick="editRow({{ $trx->id }})">✎</button>
+                                <button type="button" class="btn-icon" style="color:#EB5757" onclick="openModal('del-trx-{{$trx->id}}')">×</button>
+                            </div>
+                            <div class="edit-mode">
+                                <button type="submit" form="form-edit-{{$trx->id}}" class="btn-icon btn-save">✓</button>
+                                <button type="button" class="btn-icon btn-cancel" onclick="cancelEdit({{ $trx->id }})">✕</button>
+                            </div>
                         </td>
                     </tr>
                     @endforeach
@@ -138,7 +170,7 @@
                             <input type="date" name="transaction_date" class="input-clean" min="{{ $startDate }}" max="{{ $endDate }}" value="{{ $startDate }}" required>
                         </td>
                         <td>
-                            <input type="text" name="description" class="input-clean" placeholder="Ketik keterangan transaksi..." required autocomplete="off">
+                            <input type="text" name="description" class="input-clean" placeholder="Ketik keterangan..." required autocomplete="off">
                         </td>
                         <td>
                             <input type="text" name="amount" id="trxAmount" class="input-clean" placeholder="0" style="text-align: right;" required>
@@ -154,6 +186,9 @@
     </div>
 
     @foreach($report->transactions as $trx)
+        <form id="form-edit-{{$trx->id}}" action="{{ route('reports.transaction.update', $trx->id) }}" method="POST" style="display:none;">
+            @csrf @method('PUT')
+        </form>
         <form id="del-trx-{{$trx->id}}" action="{{ route('reports.transaction.destroy', $trx->id) }}" method="POST" style="display:none;">
             @csrf @method('DELETE')
         </form>
@@ -162,9 +197,9 @@
     <div id="deleteModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">Hapus Transaksi?</div>
-            <div class="modal-desc">Data transaksi ini akan dihapus permanen dari laporan.</div>
+            <div class="modal-desc">Tindakan ini tidak dapat dibatalkan. Data transaksi ini akan dihapus permanen.</div>
             <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Batal</button>
+                <button type="button" class="btn-cancel-modal" onclick="closeModal()">Batal</button>
                 <button type="button" id="confirmBtn" class="btn-danger">Ya, Hapus</button>
             </div>
         </div>
@@ -173,25 +208,44 @@
     <script>
         var trxInput = document.getElementById("trxAmount");
         trxInput.addEventListener("keyup", function(e) { trxInput.value = formatRupiah(this.value); });
+
+        document.querySelectorAll('.rupiah-edit').forEach(function(input) {
+            input.addEventListener("keyup", function(e) { this.value = formatRupiah(this.value); });
+        });
+
         function formatRupiah(angka) {
             var number_string = angka.replace(/[^,\d]/g, "").toString(), split = number_string.split(","), sisa = split[0].length % 3, rupiah = split[0].substr(0, sisa), ribuan = split[0].substr(sisa).match(/\d{3}/gi);
             if (ribuan) { separator = sisa ? "." : ""; rupiah += separator + ribuan.join("."); }
             return split[1] != undefined ? rupiah + "," + split[1] : rupiah;
         }
 
-        // Modal Logic
+        function editRow(id) {
+            document.querySelectorAll('tr.editing').forEach(row => row.classList.remove('editing'));
+            document.getElementById('row-' + id).classList.add('editing');
+        }
+
+        function cancelEdit(id) {
+            document.getElementById('row-' + id).classList.remove('editing');
+        }
+
         let formToDelete = null;
+
         function openModal(formId) {
             formToDelete = formId;
             document.getElementById('deleteModal').style.display = 'flex';
         }
+
         function closeModal() {
             document.getElementById('deleteModal').style.display = 'none';
             formToDelete = null;
         }
+
         document.getElementById('confirmBtn').onclick = function() {
-            if (formToDelete) { document.getElementById(formToDelete).submit(); }
+            if (formToDelete) {
+                document.getElementById(formToDelete).submit();
+            }
         };
+
         document.getElementById('deleteModal').onclick = function(e) {
             if (e.target === this) closeModal();
         }

@@ -20,5 +20,6 @@ Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/{year}/{month}/{slug}/excel', [ReportController::class, 'exportExcel'])->name('excel');
 
     Route::post('/{id}/transaction', [ReportController::class, 'storeTransaction'])->name('transaction.store');
+    Route::put('/transaction/{id}', [ReportController::class, 'updateTransaction'])->name('transaction.update');
     Route::delete('/transaction/{id}', [ReportController::class, 'destroyTransaction'])->name('transaction.destroy');
 });
