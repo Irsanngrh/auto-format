@@ -129,27 +129,24 @@ class ReportController extends Controller
         $exportType = $request->input('type');
         $year = $request->input('year');
         $ids = $request->input('report_ids');
+        $rawRekap = $request->input('rekap_no');
 
         if ($exportType == 'yearly') {
             $query = MonthlyReport::with('director')->where('year', $year);
-            
             if ($ids && count($ids) > 0) {
                 $selectedSamples = MonthlyReport::whereIn('id', $ids)->get();
                 $directorIds = $selectedSamples->pluck('director_id')->unique();
                 $query->whereIn('director_id', $directorIds);
             }
-
-            $yearlyReports = $query->get()
-                ->groupBy('director_id')
-                ->map(function ($group) use ($year) {
-                    return (object) [
-                        'director' => $group->first()->director,
-                        'year' => $year,
-                        'credit_limit' => $group->sum('credit_limit'),
-                        'total_expenses' => $group->sum(function($r){ return $r->transactions->sum('amount'); }),
-                        'remaining_limit' => $group->sum('credit_limit') - $group->sum(function($r){ return $r->transactions->sum('amount'); })
-                    ];
-                });
+            $yearlyReports = $query->get()->groupBy('director_id')->map(function ($group) use ($year) {
+                return (object) [
+                    'director' => $group->first()->director,
+                    'year' => $year,
+                    'credit_limit' => $group->sum('credit_limit'),
+                    'total_expenses' => $group->sum(function($r){ return $r->transactions->sum('amount'); }),
+                    'remaining_limit' => $group->sum('credit_limit') - $group->sum(function($r){ return $r->transactions->sum('amount'); })
+                ];
+            });
 
             $names = $yearlyReports->pluck('director.name')->implode(' + ');
             $filename = "{$names} - Rekap Tahun {$year}";
@@ -169,19 +166,33 @@ class ReportController extends Controller
         $names = $reports->pluck('director.name')->unique()->implode(' + ');
         $first = $reports->first();
         $monthName = $this->getMonthName($first->month);
+        $romawi = $this->getRomawi($first->month);
         $filename = "{$names} - Rekap {$monthName} {$first->year}";
+
+        if (is_numeric($rawRekap)) {
+            $rekapNo = "Rekap/{$rawRekap}-AS/{$romawi}/{$first->year}-DIVUM";
+        } else {
+            $rekapNo = $rawRekap ?: '-';
+        }
+
+        $manualData = [
+            'rekap_no' => $rekapNo,
+            'po_no' => $request->input('po_no', '-'),
+            'signer1_name' => $request->input('signer1_name', 'Nama Pejabat'),
+            'signer1_pos' => $request->input('signer1_pos', 'Jabatan Pejabat'),
+            'signer2_name' => $request->input('signer2_name', 'Nama Pejabat'),
+            'signer2_pos' => $request->input('signer2_pos', 'Jabatan Pejabat'),
+        ];
 
         if ($directorCount == 1) {
             $report = $reports->first();
             $total = $report->transactions->sum('amount');
             $terbilang = $this->terbilang($total);
-            $romawi = $this->getRomawi($report->month);
-            $nomorSurat = "REKAP/KU.02.02/".rand(10,99)."/$romawi/$report->year-SEKPER";
 
             if ($action == 'excel') {
-                return Excel::download(new SingleRecapExport($report, $terbilang, $nomorSurat), $filename . '.xlsx');
+                return Excel::download(new SingleRecapExport($report, $terbilang, $manualData), $filename . '.xlsx');
             } else {
-                $pdf = Pdf::loadView('reports.pdf_single', compact('report', 'terbilang', 'nomorSurat'));
+                $pdf = Pdf::loadView('reports.pdf_single', compact('report', 'terbilang', 'manualData'));
                 return $pdf->setPaper('a4', 'portrait')->download($filename . '.pdf');
             }
         } else {
@@ -192,7 +203,6 @@ class ReportController extends Controller
                 return $pdf->setPaper('a4', 'landscape')->download($filename . '.pdf');
             }
         }
-
         return redirect()->back();
     }
 
@@ -203,26 +213,6 @@ class ReportController extends Controller
     public function storeTransaction(Request $request, $id) { $cleanAmount = str_replace('.', '', $request->amount); $request->merge(['amount' => $cleanAmount]); $request->validate(['transaction_date' => 'required|date', 'description' => 'required|string', 'amount' => 'required|numeric']); Transaction::create(['monthly_report_id' => $id, 'transaction_date' => $request->transaction_date, 'description' => $request->description, 'amount' => $request->amount]); return redirect()->back()->with('success', 'Transaksi disimpan.'); }
     public function updateTransaction(Request $request, $id) { $cleanAmount = str_replace('.', '', $request->amount); $request->merge(['amount' => $cleanAmount]); $request->validate(['transaction_date' => 'required|date', 'description' => 'required|string', 'amount' => 'required|numeric']); $transaction = Transaction::findOrFail($id); $transaction->update(['transaction_date' => $request->transaction_date, 'description' => $request->description, 'amount' => $request->amount]); return redirect()->back()->with('success', 'Transaksi diperbarui.'); }
     public function destroyTransaction($id) { Transaction::findOrFail($id)->delete(); return redirect()->back()->with('success', 'Transaksi dihapus.'); }
-    
-    public function exportPdf($year, $month, $slug) {
-        $report = $this->findReportBySlug($year, $month, $slug);
-        $total = $report->transactions->sum('amount');
-        $terbilang = $this->terbilang($total);
-        $romawi = $this->getRomawi($report->month);
-        $nomorSurat = "REKAP/KU.02.02/".rand(10,99)."/$romawi/$report->year-SEKPER";
-        $monthName = $this->getMonthName($report->month);
-        $filename = "{$report->director->name} - Rekap {$monthName} {$report->year}.pdf";
-        $pdf = Pdf::loadView('reports.pdf_single', compact('report', 'terbilang', 'nomorSurat'));
-        return $pdf->download($filename);
-    }
-    public function exportExcel($year, $month, $slug) {
-        $report = $this->findReportBySlug($year, $month, $slug);
-        $total = $report->transactions->sum('amount');
-        $terbilang = $this->terbilang($total);
-        $romawi = $this->getRomawi($report->month);
-        $nomorSurat = "REKAP/KU.02.02/".rand(10,99)."/$romawi/$report->year-SEKPER";
-        $monthName = $this->getMonthName($report->month);
-        $filename = "{$report->director->name} - Rekap {$monthName} {$report->year}.xlsx";
-        return Excel::download(new SingleRecapExport($report, $terbilang, $nomorSurat), $filename);
-    }
+    public function exportPdf($year, $month, $slug) { return redirect()->back(); }
+    public function exportExcel($year, $month, $slug) { return redirect()->back(); }
 }

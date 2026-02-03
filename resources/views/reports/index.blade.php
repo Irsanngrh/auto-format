@@ -32,19 +32,25 @@
         tr:last-child td { border-bottom: none; }
         tr:hover { background-color: var(--gray-hover); }
         .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background: #E3E2E0; color: #32302C; }
-        .amount-text { font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px; letter-spacing: -0.3px; }
         .row-actions a { color: var(--text); text-decoration: none; margin-right: 12px; font-weight: 500; font-size: 13px; opacity: 0.6; }
         .row-actions a:hover { opacity: 1; text-decoration: underline; }
         .btn-row-delete { background: none; border: none; color: #EB5757; cursor: pointer; padding: 0; font-size: 13px; opacity: 0.6; }
         .btn-row-delete:hover { opacity: 1; text-decoration: underline; }
         .empty-state { padding: 60px; text-align: center; color: var(--text-muted); font-size: 14px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 15, 0.6); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-        .modal-box { background: white; width: 320px; border-radius: 6px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid var(--border); animation: modalIn 0.2s ease-out; }
-        .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-        .modal-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+        .modal-box { background: white; width: 450px; border-radius: 6px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid var(--border); animation: modalIn 0.2s ease-out; }
+        .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .modal-body { margin-bottom: 20px; }
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+        .input-group input { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+        .row-inputs { display: flex; gap: 10px; }
+        .row-inputs .input-group { flex: 1; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
-        .btn-cancel { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--text); transition: 0.2s; }
+        .btn-cancel { background: transparent; border: 1px solid var(--border); padding: 8px 16px; border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--text); transition: 0.2s; }
         .btn-cancel:hover { background: var(--gray-hover); }
+        .btn-primary { background: var(--blue); border: 1px solid var(--blue); padding: 8px 16px; border-radius: 4px; font-size: 13px; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-primary:hover { background: #0070DA; }
         .btn-danger { background: #EB5757; border: 1px solid #EB5757; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: white; transition: 0.2s; }
         .btn-danger:hover { background: #C93C3C; }
         @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -57,13 +63,14 @@
             <a href="{{ route('reports.create') }}" class="btn-new">Baru +</a>
         </div>
 
-        <form action="{{ route('reports.index') }}" method="GET" class="toolbar">
+        <form action="{{ route('reports.index') }}" method="GET" class="toolbar" id="filterForm">
             <div class="filter-label">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                 Filter:
             </div>
+            
             <div class="filter-pill">
-                <select name="year" onchange="this.form.submit()">
+                <select name="year" onchange="cleanSubmit(this.form)">
                     @foreach($availableYears as $year)
                         <option value="{{ $year }}" {{ $filterYear == $year ? 'selected' : '' }}>Tahun {{ $year }}</option>
                     @endforeach
@@ -74,7 +81,7 @@
             </div>
             
             <div class="filter-pill" style="{{ $filterType == 'yearly' ? 'opacity: 0.5; pointer-events: none;' : '' }}">
-                <select name="month" onchange="this.form.submit()">
+                <select name="month" onchange="cleanSubmit(this.form)">
                     <option value="">Semua Bulan</option>
                     @foreach([1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April', 5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus', 9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'] as $k => $v)
                         <option value="{{ $k }}" {{ $filterMonth == $k ? 'selected' : '' }}>{{ $v }}</option>
@@ -83,7 +90,7 @@
             </div>
             
             <div class="filter-pill">
-                <select name="director_id" onchange="this.form.submit()">
+                <select name="director_id" onchange="cleanSubmit(this.form)">
                     <option value="">Semua Direksi</option>
                     @foreach($directors as $d)
                         <option value="{{ $d->id }}" {{ $filterDirector == $d->id ? 'selected' : '' }}>{{ $d->name }}</option>
@@ -92,7 +99,7 @@
             </div>
 
             <div class="filter-pill">
-                <select name="type" onchange="this.form.submit()">
+                <select name="type" onchange="cleanSubmit(this.form)">
                     <option value="monthly" {{ $filterType == 'monthly' ? 'selected' : '' }}>Rekap Bulanan</option>
                     <option value="yearly" {{ $filterType == 'yearly' ? 'selected' : '' }}>Rekap Tahunan</option>
                 </select>
@@ -100,15 +107,23 @@
             <input type="hidden" name="sort" value="{{ $sortBy }}">
 
             <div class="bulk-actions">
-                <button type="submit" form="bulkForm" name="action" value="excel" class="btn-action">Unduh Excel</button>
-                <button type="submit" form="bulkForm" name="action" value="pdf" class="btn-action">Unduh PDF</button>
-                </div>
+                <button type="button" class="btn-action" onclick="openDownloadModal('excel')">Unduh Excel</button>
+                <button type="button" class="btn-action" onclick="openDownloadModal('pdf')">Unduh PDF</button>
+            </div>
         </form>
 
         <form action="{{ route('reports.bulk_action') }}" method="POST" id="bulkForm">
             @csrf
             <input type="hidden" name="type" value="{{ $filterType }}">
             <input type="hidden" name="year" value="{{ $filterYear }}">
+            <input type="hidden" name="action" id="downloadAction">
+            
+            <input type="hidden" name="rekap_no" id="formRekapNo">
+            <input type="hidden" name="po_no" id="formPoNo">
+            <input type="hidden" name="signer1_name" id="formSigner1Name">
+            <input type="hidden" name="signer1_pos" id="formSigner1Pos">
+            <input type="hidden" name="signer2_name" id="formSigner2Name">
+            <input type="hidden" name="signer2_pos" id="formSigner2Pos">
 
             <div class="table-container">
                 <table>
@@ -117,22 +132,22 @@
                             <th style="width: 40px; text-align: center;"><input type="checkbox" onclick="toggle(this)"></th>
                             <th style="width: 250px;"><a href="#">Direksi</a></th>
                             <th style="width: 150px;">
-                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&director_id={{$filterDirector}}&type={{$filterType}}&sort={{ $sortBy == 'period_desc' ? 'period_asc' : 'period_desc' }}" class="{{ str_contains($sortBy, 'period') ? 'active' : '' }}">
+                                <a href="javascript:void(0)" onclick="cleanSort('period_{{ $sortBy == 'period_desc' ? 'asc' : 'desc' }}')" class="{{ str_contains($sortBy, 'period') ? 'active' : '' }}">
                                     Periode <span class="sort-icon">{{ $sortBy == 'period_desc' ? '↓' : ($sortBy == 'period_asc' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
-                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&director_id={{$filterDirector}}&type={{$filterType}}&sort={{ $sortBy == 'pagu_high' ? 'pagu_low' : 'pagu_high' }}" class="{{ str_contains($sortBy, 'pagu') ? 'active' : '' }}">
+                                <a href="javascript:void(0)" onclick="cleanSort('pagu_{{ $sortBy == 'pagu_high' ? 'low' : 'high' }}')" class="{{ str_contains($sortBy, 'pagu') ? 'active' : '' }}">
                                     Pagu Awal <span class="sort-icon">{{ $sortBy == 'pagu_high' ? '↓' : ($sortBy == 'pagu_low' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
-                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&director_id={{$filterDirector}}&type={{$filterType}}&sort={{ $sortBy == 'realisasi_high' ? 'realisasi_low' : 'realisasi_high' }}" class="{{ str_contains($sortBy, 'realisasi') ? 'active' : '' }}">
+                                <a href="javascript:void(0)" onclick="cleanSort('realisasi_{{ $sortBy == 'realisasi_high' ? 'low' : 'high' }}')" class="{{ str_contains($sortBy, 'realisasi') ? 'active' : '' }}">
                                     Realisasi <span class="sort-icon">{{ $sortBy == 'realisasi_high' ? '↓' : ($sortBy == 'realisasi_low' ? '↑' : '') }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
-                                <a href="?year={{$filterYear}}&month={{$filterMonth}}&director_id={{$filterDirector}}&type={{$filterType}}&sort={{ $sortBy == 'sisa_high' ? 'sisa_low' : 'sisa_high' }}" class="{{ str_contains($sortBy, 'sisa') ? 'active' : '' }}">
+                                <a href="javascript:void(0)" onclick="cleanSort('sisa_{{ $sortBy == 'sisa_high' ? 'low' : 'high' }}')" class="{{ str_contains($sortBy, 'sisa') ? 'active' : '' }}">
                                     Sisa Pagu <span class="sort-icon">{{ $sortBy == 'sisa_high' ? '↓' : ($sortBy == 'sisa_low' ? '↑' : '') }}</span>
                                 </a>
                             </th>
@@ -154,20 +169,18 @@
                                     <span class="status-badge">{{ $report->month_name }} {{ $report->year }}</span>
                                 @endif
                             </td>
-                            <td class="amount-text">Rp {{ number_format($report->credit_limit, 0, ',', '.') }}</td>
-                            <td class="amount-text">Rp {{ number_format($report->total_expenses, 0, ',', '.') }}</td>
-                            <td class="amount-text" style="color: {{ $report->remaining_limit < 0 ? '#EB5757' : 'inherit' }}">Rp {{ number_format($report->remaining_limit, 0, ',', '.') }}</td>
+                            <td>Rp {{ number_format($report->credit_limit, 0, ',', '.') }}</td>
+                            <td>Rp {{ number_format($report->total_expenses, 0, ',', '.') }}</td>
+                            <td style="color: {{ $report->remaining_limit < 0 ? '#EB5757' : 'inherit' }}">Rp {{ number_format($report->remaining_limit, 0, ',', '.') }}</td>
                             <td class="row-actions" style="text-align: right;">
                                 @if(!$report->is_aggregate)
                                     <a href="{{ route('reports.show', ['year' => $report->year, 'month' => $report->month, 'slug' => $report->director->slug]) }}">Buka</a>
-                                    <button type="button" class="btn-row-delete" onclick="openModal('del-form-{{ $report->id }}')">Hapus</button>
+                                    <button type="button" class="btn-row-delete" onclick="openDeleteModal('del-form-{{ $report->id }}')">Hapus</button>
                                 @endif
                             </td>
                         </tr>
                         @empty
-                        <tr>
-                            <td colspan="7" class="empty-state">Tidak ada data ditemukan.</td>
-                        </tr>
+                        <tr><td colspan="7" class="empty-state">Tidak ada data ditemukan.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -183,43 +196,127 @@
         @endif
     @endforeach
 
-    <div id="deleteModal" class="modal-overlay">
+    <div id="downloadModal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
-            <div class="modal-title">Hapus Laporan?</div>
-            <div class="modal-desc">Tindakan ini tidak dapat dibatalkan. Data laporan beserta seluruh transaksi di dalamnya akan dihapus permanen.</div>
+            <div class="modal-title">Konfigurasi Laporan</div>
+            <div class="modal-body">
+                <div class="row-inputs">
+                    <div class="input-group">
+                        <label>Nomor Urut Surat (Angka Saja)</label>
+                        <input type="text" id="inputRekapNo" placeholder="Contoh: 457">
+                    </div>
+                    <div class="input-group">
+                        <label>Nomor PO</label>
+                        <input type="text" id="inputPoNo" placeholder="Contoh: 2512-0059">
+                    </div>
+                </div>
+
+                <div class="input-group" style="margin-top: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                    <strong>Penyetuju 1 (Kiri)</strong>
+                </div>
+                <div class="row-inputs">
+                    <div class="input-group">
+                        <label>Jabatan</label>
+                        <input type="text" id="inputSigner1Pos" placeholder="Cth: KEPALA DIVISI UMUM">
+                    </div>
+                    <div class="input-group">
+                        <label>Nama</label>
+                        <input type="text" id="inputSigner1Name" placeholder="Nama Pejabat">
+                    </div>
+                </div>
+
+                <div class="input-group" style="margin-top: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                    <strong>Penyetuju 2 (Kanan)</strong>
+                </div>
+                <div class="row-inputs">
+                    <div class="input-group">
+                        <label>Jabatan</label>
+                        <input type="text" id="inputSigner2Pos" placeholder="Cth: KEPALA BIDANG URUMGA">
+                    </div>
+                    <div class="input-group">
+                        <label>Nama</label>
+                        <input type="text" id="inputSigner2Name" placeholder="Nama Pejabat">
+                    </div>
+                </div>
+            </div>
             <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Batal</button>
-                <button type="button" id="confirmBtn" class="btn-danger">Ya, Hapus</button>
+                <button type="button" class="btn-cancel" onclick="closeDownloadModal()">Batal</button>
+                <button type="button" class="btn-primary" onclick="submitDownload()">Unduh File</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 320px;">
+            <div class="modal-title">Hapus Laporan?</div>
+            <div class="modal-desc">Tindakan ini tidak dapat dibatalkan.</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Batal</button>
+                <button type="button" id="confirmDeleteBtn" class="btn-danger">Ya, Hapus</button>
             </div>
         </div>
     </div>
 
     <script>
+        function cleanSubmit(form) {
+            const inputs = form.querySelectorAll('select, input');
+            inputs.forEach(input => { if (!input.value) input.disabled = true; });
+            form.submit();
+        }
+
+        function cleanSort(sortValue) {
+            const form = document.getElementById('filterForm');
+            const sortInput = form.querySelector('input[name="sort"]');
+            sortInput.value = sortValue;
+            cleanSubmit(form);
+        }
+
+        let pendingAction = '';
+        
+        function openDownloadModal(action) {
+            const checkboxes = document.querySelectorAll('input[name="report_ids[]"]:checked');
+            if (checkboxes.length === 0 && '{{ $filterType }}' !== 'yearly') {
+                alert('Pilih minimal satu laporan untuk diunduh.');
+                return;
+            }
+            pendingAction = action;
+            document.getElementById('downloadModal').style.display = 'flex';
+        }
+
+        function closeDownloadModal() {
+            document.getElementById('downloadModal').style.display = 'none';
+        }
+
+        function submitDownload() {
+            document.getElementById('formRekapNo').value = document.getElementById('inputRekapNo').value;
+            document.getElementById('formPoNo').value = document.getElementById('inputPoNo').value;
+            document.getElementById('formSigner1Name').value = document.getElementById('inputSigner1Name').value;
+            document.getElementById('formSigner1Pos').value = document.getElementById('inputSigner1Pos').value;
+            document.getElementById('formSigner2Name').value = document.getElementById('inputSigner2Name').value;
+            document.getElementById('formSigner2Pos').value = document.getElementById('inputSigner2Pos').value;
+            
+            document.getElementById('downloadAction').value = pendingAction;
+            
+            document.getElementById('bulkForm').submit();
+            closeDownloadModal();
+        }
+
         let formToDelete = null;
+        function openDeleteModal(formId) {
+            formToDelete = formId;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            formToDelete = null;
+        }
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if (formToDelete) document.getElementById(formToDelete).submit();
+        };
 
         function toggle(source) {
             checkboxes = document.getElementsByName('report_ids[]');
             for(var i=0, n=checkboxes.length;i<n;i++) { checkboxes[i].checked = source.checked; }
-        }
-
-        function openModal(formId) {
-            formToDelete = formId;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-            formToDelete = null;
-        }
-
-        document.getElementById('confirmBtn').onclick = function() {
-            if (formToDelete) {
-                document.getElementById(formToDelete).submit();
-            }
-        };
-
-        document.getElementById('deleteModal').onclick = function(e) {
-            if (e.target === this) closeModal();
         }
     </script>
 </body>
