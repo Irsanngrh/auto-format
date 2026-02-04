@@ -10,7 +10,7 @@
         .header-table { width: 100%; margin-bottom: 10px; }
         .header-table td { vertical-align: top; }
         .title-block { text-align: center; margin-bottom: 25px; margin-top: 20px; }
-        .title-main { font-size: 16px; margin-bottom: 4px; }
+        .title-main { font-size: 13px; margin-bottom: 4px; font-weight: bold; }
         .content-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .content-table th, .content-table td { border: 1px solid black; padding: 6px; vertical-align: top; }
         .signature-table { width: 100%; margin-top: 40px; page-break-inside: avoid; }
@@ -29,7 +29,11 @@
     <table class="header-table">
         <tr>
             <td width="50%" style="vertical-align: middle;">
-                <img src="{{ public_path('images/logo-asabri.png') }}" alt="Logo ASABRI" style="height: 35px; width: auto;">
+                @if(file_exists(public_path('images/logo-asabri.png')))
+                    <img src="{{ public_path('images/logo-asabri.png') }}" alt="Logo ASABRI" style="height: 35px; width: auto;">
+                @else
+                    <b>PT ASABRI (Persero)</b>
+                @endif
             </td>
             <td width="50%" class="text-right" style="vertical-align: middle;">
                 PO: {{ $manualData['po_no'] }}

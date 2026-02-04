@@ -20,7 +20,7 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
     protected $report;
     protected $terbilang;
     protected $manualData;
-    protected $periodText; // Variabel baru
+    protected $periodText;
 
     public function __construct($report, $terbilang, $manualData, $periodText)
     {
@@ -36,7 +36,7 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
             'report' => $this->report, 
             'terbilang' => $this->terbilang,
             'manualData' => $this->manualData,
-            'periodText' => $this->periodText // Kirim ke View
+            'periodText' => $this->periodText
         ]);
     }
 
@@ -93,7 +93,6 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
                 $sheet->getPageSetup()->setFitToWidth(1);
                 $sheet->getPageSetup()->setFitToHeight(0);
 
-                // GUNAKAN PERIOD TEXT UNTUK HITUNG TINGGI
                 $text = "Rekap Realisasi Biaya Penggunaan Corporate Card Direksi PT ASABRI (Persero) " . 
                         $this->periodText . ", dengan rincian sebagai berikut:";
                 

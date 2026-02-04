@@ -1,25 +1,23 @@
 <?php
 
-use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DirectorController;
+use App\Http\Controllers\ReportController;
 
 Route::get('/', function () {
     return redirect()->route('reports.index');
 });
 
-Route::prefix('reports')->name('reports.')->group(function () {
-    Route::get('/', [ReportController::class, 'index'])->name('index');
-    Route::get('/create', [ReportController::class, 'create'])->name('create');
-    Route::post('/', [ReportController::class, 'store'])->name('store');
-    
-    Route::post('/bulk-action', [ReportController::class, 'bulkAction'])->name('bulk_action');
-    Route::delete('/{id}', [ReportController::class, 'destroy'])->name('destroy');
+Route::resource('directors', DirectorController::class);
 
-    Route::get('/{year}/{month}/{slug}', [ReportController::class, 'show'])->name('show');
-    Route::get('/{year}/{month}/{slug}/pdf', [ReportController::class, 'exportPdf'])->name('pdf');
-    Route::get('/{year}/{month}/{slug}/excel', [ReportController::class, 'exportExcel'])->name('excel');
+Route::post('/reports/bulk-action', [ReportController::class, 'bulkAction'])->name('reports.bulkAction');
+Route::get('/reports/{id}/pdf', [ReportController::class, 'exportPdf'])->name('reports.exportPdf');
+Route::get('/reports/{id}/excel', [ReportController::class, 'exportExcel'])->name('reports.exportExcel');
 
-    Route::post('/{id}/transaction', [ReportController::class, 'storeTransaction'])->name('transaction.store');
-    Route::put('/transaction/{id}', [ReportController::class, 'updateTransaction'])->name('transaction.update');
-    Route::delete('/transaction/{id}', [ReportController::class, 'destroyTransaction'])->name('transaction.destroy');
-});
+Route::post('/reports/{id}/transaction', [ReportController::class, 'storeTransaction'])->name('transactions.store');
+Route::put('/transactions/{id}', [ReportController::class, 'updateTransaction'])->name('transactions.update');
+Route::delete('/transactions/{id}', [ReportController::class, 'destroyTransaction'])->name('transactions.destroy');
+
+Route::get('/report/{slug}/{month}/{year}', [ReportController::class, 'show'])->name('reports.show');
+
+Route::resource('reports', ReportController::class)->except(['show']);

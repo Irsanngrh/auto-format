@@ -1,254 +1,151 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ $report->director->name }}</title>
-    <style>
-        :root { --bg: #FFFFFF; --text: #37352F; --gray: #F7F7F5; --border: #E0E0E0; --text-muted: #9B9A97; --blue: #2383E2; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 40px; }
-        .container { max-width: 900px; margin: 0 auto; }
+@extends('layouts.app')
+@section('content')
 
-        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-        .btn-back { display: inline-flex; align-items: center; padding: 6px 12px; border: 1px solid var(--border); border-radius: 4px; color: var(--text); text-decoration: none; font-size: 14px; transition: 0.2s; font-weight: 500; }
-        .btn-back:hover { background-color: var(--gray); }
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <a href="{{ route('reports.index') }}" class="btn btn-light border ps-2 pe-3">
+        <i class="bi bi-chevron-left small me-1"></i> Kembali
+    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('reports.edit', $report->id) }}" class="btn btn-light border">
+            <i class="bi bi-pencil me-1"></i> Edit Properti
+        </a>
+        <div class="vr mx-1 text-muted opacity-25"></div>
+        <a href="{{ route('reports.exportPdf', $report->id) }}" class="btn btn-light border text-danger">
+            <i class="bi bi-file-pdf"></i>
+        </a>
+        <a href="{{ route('reports.exportExcel', $report->id) }}" class="btn btn-light border text-success">
+            <i class="bi bi-file-earmark-excel"></i>
+        </a>
+    </div>
+</div>
 
-        .actions { display: flex; gap: 8px; }
-        .btn-tool { padding: 6px 12px; border: 1px solid var(--border); border-radius: 4px; background: transparent; color: var(--text); text-decoration: none; font-size: 14px; cursor: pointer; transition: 0.2s; }
-        .btn-tool:hover { background-color: var(--gray); }
+<div class="card-custom p-4 mb-5">
+    <div class="mb-4">
+        <h3 class="mb-0 fw-bold">{{ $report->director->name }}</h3>
+        <span class="text-secondary">{{ $report->director->position }}</span>
+    </div>
+    
+    <div class="row g-4 border-top pt-4">
+        <div class="col-md-3">
+            <div class="text-label">PERIODE</div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-calendar4-week text-secondary small"></i>
+                <span class="fw-medium">{{ $report->month_name }} {{ $report->year }}</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-label">KARTU KREDIT</div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-credit-card text-secondary small"></i>
+                <span class="fw-medium">{{ $report->creditCard->bank_name }}</span>
+                <span class="text-secondary small font-monospace bg-light px-1 rounded">{{ $report->creditCard->card_number }}</span>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="text-label">PAGU KREDIT</div>
+            <div class="fw-medium text-secondary">Rp {{ number_format($report->credit_limit, 0, ',', '.') }}</div>
+        </div>
+        <div class="col-md-2">
+            <div class="text-label">REALISASI</div>
+            <div class="fw-medium">Rp {{ number_format($totalExpenses, 0, ',', '.') }}</div>
+        </div>
+        <div class="col-md-2">
+            <div class="text-label">SISA SALDO</div>
+            <div class="fw-bold text-success">Rp {{ number_format($remainingLimit, 0, ',', '.') }}</div>
+        </div>
+    </div>
+</div>
 
-        .doc-header { margin-bottom: 40px; }
-        h1 { font-size: 40px; font-weight: 700; margin: 0 0 10px 0; letter-spacing: -1px; }
-        
-        .properties { display: grid; grid-template-columns: 120px 1fr; gap: 10px; margin-bottom: 30px; font-size: 14px; }
-        .prop-label { color: var(--text-muted); display: flex; align-items: center; }
-        .prop-value { display: flex; align-items: center; }
-        .tag { background: #E3E2E0; padding: 2px 6px; border-radius: 3px; font-size: 13px; color: #32302C; }
+<h5 class="mb-3 px-1">Transaksi</h5>
+<div class="card-custom overflow-hidden">
+    <table class="table-notion">
+        <thead>
+            <tr>
+                <th width="15%" class="ps-4">Tanggal</th>
+                <th width="50%">Deskripsi Transaksi</th>
+                <th width="20%" class="text-end">Nominal (Rp)</th>
+                <th width="15%" class="text-end pe-4"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($report->transactions as $trx)
+            <tr>
+                <form id="update-form-{{ $trx->id }}" action="{{ route('transactions.update', $trx->id) }}" method="POST">@csrf @method('PUT')</form>
+                
+                <td class="ps-4">
+                    <div class="view-mode-{{ $trx->id }}">
+                        <span class="badge-notion bg-white border text-secondary">
+                            {{ $trx->transaction_date->format('d M Y') }}
+                        </span>
+                    </div>
+                    <input form="update-form-{{ $trx->id }}" type="date" name="transaction_date" 
+                        class="form-control form-control-sm edit-mode-{{ $trx->id }} d-none" 
+                        value="{{ $trx->transaction_date->format('Y-m-d') }}" required>
+                </td>
 
-        .callout { background: #F1F1EF; padding: 16px; border-radius: 4px; display: flex; gap: 24px; margin-bottom: 40px; }
-        .callout-item { flex: 1; }
-        .callout-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
-        .callout-value { font-size: 18px; font-weight: 600; font-family: 'SF Mono', monospace; }
+                <td>
+                    <span class="view-mode-{{ $trx->id }} fw-medium">{{ $trx->description }}</span>
+                    <input form="update-form-{{ $trx->id }}" type="text" name="description" 
+                        class="form-control form-control-sm edit-mode-{{ $trx->id }} d-none" 
+                        value="{{ $trx->description }}" required>
+                </td>
 
-        h3 { font-size: 18px; font-weight: 600; margin-bottom: 0; padding-bottom: 12px; }
-        
-        .table-wrap { border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
-        th { text-align: left; padding: 10px 12px; color: var(--text-muted); font-weight: 600; font-size: 12px; border-bottom: 1px solid var(--border); background: #FBFBFA; }
-        td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; height: 32px; }
-        
-        .input-row td { padding: 0; border-bottom: none; background: #fff; }
-        .input-clean { width: 100%; height: 100%; padding: 12px; border: none; font-family: inherit; font-size: 14px; background: transparent; box-sizing: border-box; transition: box-shadow 0.2s; position: relative; }
-        .input-clean:focus { background: #fff; outline: none; box-shadow: inset 0 0 0 2px var(--blue); z-index: 2; }
-        
-        .input-edit { width: 100%; padding: 4px 8px; border: 1px solid var(--border); border-radius: 3px; font-size: 13px; font-family: inherit; box-sizing: border-box; }
-        .input-edit:focus { outline: 2px solid var(--blue); border-color: transparent; }
-        
-        .display-mode { display: block; }
-        .edit-mode { display: none; }
-        tr.editing .display-mode { display: none; }
-        tr.editing .edit-mode { display: block; }
+                <td class="text-end font-monospace">
+                    <span class="view-mode-{{ $trx->id }}">{{ number_format($trx->amount, 0, ',', '.') }}</span>
+                    <input form="update-form-{{ $trx->id }}" type="text" name="amount" 
+                        class="form-control form-control-sm text-end rupiah edit-mode-{{ $trx->id }} d-none" 
+                        value="{{ number_format($trx->amount, 0, ',', '.') }}" required>
+                </td>
 
-        .btn-icon { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; color: #9B9A97; transition: 0.2s; }
-        .btn-icon:hover { color: var(--text); background: var(--gray); border-radius: 3px; }
-        .btn-save { color: #219653; }
-        .btn-cancel { color: #EB5757; }
-        
-        .btn-add { color: #9B9A97; background: none; border: none; font-size: 14px; padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; transition: 0.2s; }
-        .btn-add:hover { color: var(--text); background: var(--gray); }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 15, 0.6); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-        .modal-box { background: white; width: 320px; border-radius: 6px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid var(--border); animation: modalIn 0.2s ease-out; }
-        .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-        .modal-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
-        .btn-cancel-modal { background: transparent; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: var(--text); transition: 0.2s; }
-        .btn-cancel-modal:hover { background: var(--gray); }
-        .btn-danger { background: #EB5757; border: 1px solid #EB5757; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; color: white; transition: 0.2s; }
-        .btn-danger:hover { background: #C93C3C; }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <div class="top-nav">
-            <a href="{{ route('reports.index') }}" class="btn-back">← Dashboard</a>
+                <td class="text-end pe-4">
+                    <div class="view-mode-{{ $trx->id }} opacity-50 hover-opacity-100">
+                        <button type="button" class="btn btn-sm p-0 me-2 text-secondary" onclick="toggleEdit({{ $trx->id }})" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <form action="{{ route('transactions.destroy', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus?')">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm p-0 text-danger" title="Hapus"><i class="bi bi-x"></i></button>
+                        </form>
+                    </div>
+                    <div class="edit-mode-{{ $trx->id }} d-none gap-1 justify-content-end">
+                        <button type="submit" form="update-form-{{ $trx->id }}" class="btn btn-sm btn-primary py-0 px-2"><i class="bi bi-check"></i></button>
+                        <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="toggleEdit({{ $trx->id }})"><i class="bi bi-x"></i></button>
+                    </div>
+                </td>
+            </tr>
+            @endforeach
             
-            <div class="actions">
-                <a href="{{ route('reports.excel', ['year' => $report->year, 'month' => $report->month, 'slug' => $report->director->slug]) }}" class="btn-tool">Excel</a>
-                <a href="{{ route('reports.pdf', ['year' => $report->year, 'month' => $report->month, 'slug' => $report->director->slug]) }}" class="btn-tool">PDF</a>
-            </div>
-        </div>
+            <tr class="bg-light">
+                <form action="{{ route('transactions.store', $report->id) }}" method="POST">
+                    @csrf
+                    <td class="ps-4 py-3">
+                        <input type="date" name="transaction_date" class="form-control form-control-sm bg-white border shadow-sm" required>
+                    </td>
+                    <td class="py-3">
+                        <input type="text" name="description" class="form-control form-control-sm bg-white border shadow-sm" placeholder="Ketik deskripsi baru..." required>
+                    </td>
+                    <td class="py-3">
+                        <input type="text" name="amount" class="form-control form-control-sm bg-white border shadow-sm text-end rupiah" placeholder="0" required>
+                    </td>
+                    <td class="text-end py-3 pe-4">
+                        <button type="submit" class="btn btn-sm btn-primary w-100" title="Tambah">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </td>
+                </form>
+            </tr>
+        </tbody>
+    </table>
+</div>
 
-        <div class="doc-header">
-            <h1>{{ $report->director->name }}</h1>
-            <div class="properties">
-                <div class="prop-label">Jabatan</div>
-                <div class="prop-value">{{ $report->director->position }}</div>
-                <div class="prop-label">Periode</div>
-                <div class="prop-value"><span class="tag">{{ $report->month_name }} {{ $report->year }}</span></div>
-                <div class="prop-label">Kartu</div>
-                <div class="prop-value" style="font-family: 'SF Mono', monospace;">
-                    @foreach($report->director->creditCards as $card)
-                        {{ $card->card_number }}
-                    @endforeach
-                </div>
-            </div>
-        </div>
-
-        <div class="callout">
-            <div class="callout-item">
-                <div class="callout-label">Pagu Awal</div>
-                <div class="callout-value">Rp {{ number_format($report->credit_limit, 0, ',', '.') }}</div>
-            </div>
-            <div class="callout-item">
-                <div class="callout-label">Realisasi</div>
-                <div class="callout-value" style="color: #EB5757;">Rp {{ number_format($totalExpenses, 0, ',', '.') }}</div>
-            </div>
-            <div class="callout-item">
-                <div class="callout-label">Sisa</div>
-                <div class="callout-value" style="color: #219653;">Rp {{ number_format($remainingLimit, 0, ',', '.') }}</div>
-            </div>
-        </div>
-
-        <h3>Transaksi</h3>
-        <div class="table-wrap">
-            <form action="{{ route('reports.transaction.store', $report->id) }}" method="POST">
-            @csrf
-            <table>
-                <thead>
-                    <tr>
-                        <th width="140">Tanggal</th>
-                        <th>Keterangan</th>
-                        <th width="160" style="text-align: right;">Nominal</th>
-                        <th width="160" style="text-align: right;">Sisa Pagu</th>
-                        <th width="80" style="text-align: center;">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php $balance = $report->credit_limit; @endphp
-                    @foreach($report->transactions as $trx)
-                    @php $balance -= $trx->amount; @endphp
-                    
-                    <tr id="row-{{ $trx->id }}">
-                        <td>
-                            <div class="display-mode">{{ \Carbon\Carbon::parse($trx->transaction_date)->format('d M Y') }}</div>
-                            <div class="edit-mode">
-                                <input type="date" name="transaction_date" class="input-edit" form="form-edit-{{$trx->id}}" value="{{ $trx->transaction_date }}" min="{{ $startDate }}" max="{{ $endDate }}" required>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="display-mode">{{ $trx->description }}</div>
-                            <div class="edit-mode">
-                                <input type="text" name="description" class="input-edit" form="form-edit-{{$trx->id}}" value="{{ $trx->description }}" required>
-                            </div>
-                        </td>
-                        <td style="text-align: right;">
-                            <div class="display-mode" style="font-family: 'SF Mono', monospace;">{{ number_format($trx->amount, 0, ',', '.') }}</div>
-                            <div class="edit-mode">
-                                <input type="text" name="amount" class="input-edit rupiah-edit" form="form-edit-{{$trx->id}}" value="{{ number_format($trx->amount, 0, ',', '.') }}" style="text-align: right;" required>
-                            </div>
-                        </td>
-                        <td style="text-align: right; font-family: 'SF Mono', monospace; color: #9B9A97;">
-                            {{ number_format($balance, 0, ',', '.') }}
-                        </td>
-                        <td style="text-align: center;">
-                            <div class="display-mode">
-                                <button type="button" class="btn-icon" onclick="editRow({{ $trx->id }})">✎</button>
-                                <button type="button" class="btn-icon" style="color:#EB5757" onclick="openModal('del-trx-{{$trx->id}}')">×</button>
-                            </div>
-                            <div class="edit-mode">
-                                <button type="submit" form="form-edit-{{$trx->id}}" class="btn-icon btn-save">✓</button>
-                                <button type="button" class="btn-icon btn-cancel" onclick="cancelEdit({{ $trx->id }})">✕</button>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-
-                    <tr class="input-row">
-                        <td>
-                            <input type="date" name="transaction_date" class="input-clean" min="{{ $startDate }}" max="{{ $endDate }}" value="{{ $startDate }}" required>
-                        </td>
-                        <td>
-                            <input type="text" name="description" class="input-clean" placeholder="Ketik keterangan..." required autocomplete="off">
-                        </td>
-                        <td>
-                            <input type="text" name="amount" id="trxAmount" class="input-clean" placeholder="0" style="text-align: right;" required>
-                        </td>
-                        <td colspan="2" style="padding: 0;">
-                             <button type="submit" class="btn-add" style="height: 42px; border-left: 1px solid var(--border); justify-content: center;">Simpan</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            </form>
-        </div>
-    </div>
-
-    @foreach($report->transactions as $trx)
-        <form id="form-edit-{{$trx->id}}" action="{{ route('reports.transaction.update', $trx->id) }}" method="POST" style="display:none;">
-            @csrf @method('PUT')
-        </form>
-        <form id="del-trx-{{$trx->id}}" action="{{ route('reports.transaction.destroy', $trx->id) }}" method="POST" style="display:none;">
-            @csrf @method('DELETE')
-        </form>
-    @endforeach
-
-    <div id="deleteModal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-title">Hapus Transaksi?</div>
-            <div class="modal-desc">Tindakan ini tidak dapat dibatalkan. Data transaksi ini akan dihapus permanen.</div>
-            <div class="modal-actions">
-                <button type="button" class="btn-cancel-modal" onclick="closeModal()">Batal</button>
-                <button type="button" id="confirmBtn" class="btn-danger">Ya, Hapus</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        var trxInput = document.getElementById("trxAmount");
-        trxInput.addEventListener("keyup", function(e) { trxInput.value = formatRupiah(this.value); });
-
-        document.querySelectorAll('.rupiah-edit').forEach(function(input) {
-            input.addEventListener("keyup", function(e) { this.value = formatRupiah(this.value); });
+<script>
+    function toggleEdit(id) {
+        document.querySelectorAll(`.view-mode-${id}`).forEach(el => el.classList.toggle('d-none'));
+        document.querySelectorAll(`.edit-mode-${id}`).forEach(el => {
+            el.classList.toggle('d-none');
+            if (el.tagName === 'DIV' && !el.classList.contains('d-none')) el.classList.add('d-flex');
+            else if (el.tagName === 'DIV') el.classList.remove('d-flex');
         });
-
-        function formatRupiah(angka) {
-            var number_string = angka.replace(/[^,\d]/g, "").toString(), split = number_string.split(","), sisa = split[0].length % 3, rupiah = split[0].substr(0, sisa), ribuan = split[0].substr(sisa).match(/\d{3}/gi);
-            if (ribuan) { separator = sisa ? "." : ""; rupiah += separator + ribuan.join("."); }
-            return split[1] != undefined ? rupiah + "," + split[1] : rupiah;
-        }
-
-        function editRow(id) {
-            document.querySelectorAll('tr.editing').forEach(row => row.classList.remove('editing'));
-            document.getElementById('row-' + id).classList.add('editing');
-        }
-
-        function cancelEdit(id) {
-            document.getElementById('row-' + id).classList.remove('editing');
-        }
-
-        let formToDelete = null;
-
-        function openModal(formId) {
-            formToDelete = formId;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-            formToDelete = null;
-        }
-
-        document.getElementById('confirmBtn').onclick = function() {
-            if (formToDelete) {
-                document.getElementById(formToDelete).submit();
-            }
-        };
-
-        document.getElementById('deleteModal').onclick = function(e) {
-            if (e.target === this) closeModal();
-        }
-    </script>
-</body>
-</html>
+    }
+</script>
+@endsection
