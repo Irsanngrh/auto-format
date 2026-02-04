@@ -62,7 +62,7 @@
                 <td class="text-center">1</td>
                 <td>
                     Rekap Realisasi Biaya Penggunaan Corporate Card Direksi<br>
-                    PT ASABRI (Persero) Periode Bulan {{ $report->month_name }} {{ $report->year }}, dengan rincian sebagai berikut:<br><br>
+                    PT ASABRI (Persero) {{ $periodText }}, dengan rincian sebagai berikut:<br><br>
                     {{ strtoupper($report->director->position) }} PT ASABRI (Persero)
                 </td>
                 <td class="text-right" style="vertical-align: bottom;">

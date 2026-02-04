@@ -20,12 +20,14 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
     protected $report;
     protected $terbilang;
     protected $manualData;
+    protected $periodText; // Variabel baru
 
-    public function __construct($report, $terbilang, $manualData)
+    public function __construct($report, $terbilang, $manualData, $periodText)
     {
         $this->report = $report;
         $this->terbilang = $terbilang;
         $this->manualData = $manualData;
+        $this->periodText = $periodText;
     }
 
     public function view(): View
@@ -33,7 +35,8 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
         return view('reports.excel_single', [
             'report' => $this->report, 
             'terbilang' => $this->terbilang,
-            'manualData' => $this->manualData
+            'manualData' => $this->manualData,
+            'periodText' => $this->periodText // Kirim ke View
         ]);
     }
 
@@ -75,9 +78,7 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
         $sheet->getStyle('B')->getAlignment()->setWrapText(true);
         $sheet->getStyle('C')->getAlignment()->setWrapText(true);
         $sheet->getStyle('D')->getAlignment()->setWrapText(true);
-        
         $sheet->getParent()->getDefaultStyle()->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-        
         $sheet->getParent()->getDefaultStyle()->getFont()->setName('Arial');
         $sheet->getParent()->getDefaultStyle()->getFont()->setSize(11);
         $sheet->getParent()->getDefaultStyle()->getFont()->setBold(false);
@@ -92,9 +93,9 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
                 $sheet->getPageSetup()->setFitToWidth(1);
                 $sheet->getPageSetup()->setFitToHeight(0);
 
-                $bulanStr = ucfirst(strtolower($this->report->month_name));
-                $text = "Rekap Realisasi Biaya Penggunaan Corporate Card Direksi PT ASABRI (Persero) Periode Bulan " . 
-                        $bulanStr . " " . $this->report->year . ", dengan rincian sebagai berikut:";
+                // GUNAKAN PERIOD TEXT UNTUK HITUNG TINGGI
+                $text = "Rekap Realisasi Biaya Penggunaan Corporate Card Direksi PT ASABRI (Persero) " . 
+                        $this->periodText . ", dengan rincian sebagai berikut:";
                 
                 $charLength = strlen($text);
                 $charsPerLine = 50; 

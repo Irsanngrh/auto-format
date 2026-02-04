@@ -8,11 +8,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\MonthlyReportExport;
-use App\Exports\BulkReportExport;
-use App\Exports\MonthlyRecapExport;
 use App\Exports\SingleRecapExport;
-use App\Exports\YearlyRecapExport;
 use Carbon\Carbon;
 
 class ReportController extends Controller
@@ -126,93 +122,186 @@ class ReportController extends Controller
     public function bulkAction(Request $request)
     {
         $action = $request->input('action');
-        $exportType = $request->input('type');
-        $year = $request->input('year');
+        $exportType = $request->input('type'); 
         $ids = $request->input('report_ids');
-        $rawRekap = $request->input('rekap_no');
-
-        if ($exportType == 'yearly') {
-            $query = MonthlyReport::with('director')->where('year', $year);
-            if ($ids && count($ids) > 0) {
-                $selectedSamples = MonthlyReport::whereIn('id', $ids)->get();
-                $directorIds = $selectedSamples->pluck('director_id')->unique();
-                $query->whereIn('director_id', $directorIds);
-            }
-            $yearlyReports = $query->get()->groupBy('director_id')->map(function ($group) use ($year) {
-                return (object) [
-                    'director' => $group->first()->director,
-                    'year' => $year,
-                    'credit_limit' => $group->sum('credit_limit'),
-                    'total_expenses' => $group->sum(function($r){ return $r->transactions->sum('amount'); }),
-                    'remaining_limit' => $group->sum('credit_limit') - $group->sum(function($r){ return $r->transactions->sum('amount'); })
-                ];
-            });
-
-            $names = $yearlyReports->pluck('director.name')->implode(' + ');
-            $filename = "{$names} - Rekap Tahun {$year}";
-
-            if ($action == 'excel') {
-                return Excel::download(new YearlyRecapExport($yearlyReports, $year), $filename . '.xlsx');
-            } else {
-                $pdf = Pdf::loadView('reports.pdf_yearly', ['reports' => $yearlyReports, 'year' => $year]);
-                return $pdf->setPaper('a4', 'landscape')->download($filename . '.pdf');
-            }
+        
+        if (!$ids || count($ids) == 0) {
+            return redirect()->back()->with('error', 'Pilih minimal satu laporan.');
         }
 
-        $request->validate(['report_ids' => 'required|array']);
-        $reports = MonthlyReport::with(['director.creditCards', 'transactions'])->whereIn('id', $ids)->get();
-        $directorCount = $reports->pluck('director_id')->unique()->count();
-        
-        $names = $reports->pluck('director.name')->unique()->implode(' + ');
-        $first = $reports->first();
-        $monthName = $this->getMonthName($first->month);
-        $romawi = $this->getRomawi($first->month);
-        $filename = "{$names} - Rekap {$monthName} {$first->year}";
+        if ($exportType == 'yearly') {
+            $sampleReport = MonthlyReport::findOrFail($ids[0]);
+            $year = $sampleReport->year;
+            $directorId = $sampleReport->director_id;
+            
+            $reports = MonthlyReport::with(['director.creditCards', 'transactions'])
+                ->where('director_id', $directorId)
+                ->where('year', $year)
+                ->get();
+            
+            $first = $reports->first();
+            $director = $first->director;
+            
+            $allTransactions = $reports->flatMap(function($r) { return $r->transactions; });
+            $first->setRelation('transactions', $allTransactions);
+            
+            $periodText = "Periode Tahun " . $year;
+            $filename = "{$director->name} - Rekap Tahun {$year}";
+            $rekapNoSuffix = "Rekap/...-AS/XII/{$year}-DIVUM"; 
 
-        if (is_numeric($rawRekap)) {
-            $rekapNo = "Rekap/{$rawRekap}-AS/{$romawi}/{$first->year}-DIVUM";
         } else {
-            $rekapNo = $rawRekap ?: '-';
+            $reports = MonthlyReport::with(['director.creditCards', 'transactions'])->whereIn('id', $ids)->get();
+            $first = $reports->first();
+            $director = $first->director;
+            
+            $monthName = $this->getMonthName($first->month);
+            $romawi = $this->getRomawi($first->month);
+            $year = $first->year;
+            
+            $periodText = "Periode Bulan {$monthName} {$year}";
+            $filename = "{$director->name} - Rekap {$monthName} {$year}";
+            $rekapNoSuffix = "Rekap/...-AS/{$romawi}/{$year}-DIVUM";
         }
 
         $manualData = [
-            'rekap_no' => $rekapNo,
+            'rekap_no' => $request->input('rekap_no', '-'),
             'po_no' => $request->input('po_no', '-'),
             'signer1_name' => $request->input('signer1_name', 'Nama Pejabat'),
             'signer1_pos' => $request->input('signer1_pos', 'Jabatan Pejabat'),
             'signer2_name' => $request->input('signer2_name', 'Nama Pejabat'),
             'signer2_pos' => $request->input('signer2_pos', 'Jabatan Pejabat'),
         ];
-
-        if ($directorCount == 1) {
-            $report = $reports->first();
-            $total = $report->transactions->sum('amount');
-            $terbilang = $this->terbilang($total);
-
-            if ($action == 'excel') {
-                return Excel::download(new SingleRecapExport($report, $terbilang, $manualData), $filename . '.xlsx');
-            } else {
-                $pdf = Pdf::loadView('reports.pdf_single', compact('report', 'terbilang', 'manualData'));
-                return $pdf->setPaper('a4', 'portrait')->download($filename . '.pdf');
-            }
-        } else {
-            if ($action == 'excel') {
-                return Excel::download(new MonthlyRecapExport($reports), $filename . '.xlsx');
-            } else {
-                $pdf = Pdf::loadView('reports.pdf_monthly', compact('reports'));
-                return $pdf->setPaper('a4', 'landscape')->download($filename . '.pdf');
-            }
+        
+        if (is_numeric($manualData['rekap_no'])) {
+            $manualData['rekap_no'] = str_replace('...', $request->input('rekap_no'), $rekapNoSuffix);
         }
-        return redirect()->back();
+
+        $total = $first->transactions->sum('amount');
+        $terbilang = $this->terbilang($total);
+
+        if ($action == 'excel') {
+            return Excel::download(new SingleRecapExport($first, $terbilang, $manualData, $periodText), $filename . '.xlsx');
+        } else {
+            // FIX: Menggunakan array mapping untuk mengirim $first sebagai 'report'
+            $pdf = Pdf::loadView('reports.pdf_single', [
+                'report' => $first,
+                'terbilang' => $terbilang,
+                'manualData' => $manualData,
+                'periodText' => $periodText
+            ]);
+            return $pdf->setPaper('a4', 'portrait')->download($filename . '.pdf');
+        }
     }
 
-    public function create() { $directors = Director::with('creditCards')->get(); return view('reports.create', compact('directors')); }
-    public function store(Request $request) { $cleanLimit = str_replace('.', '', $request->credit_limit); $request->merge(['credit_limit' => $cleanLimit]); $request->validate(['director_id' => 'required', 'month' => 'required|numeric', 'year' => 'required|numeric', 'credit_limit' => 'required|numeric']); $exists = MonthlyReport::where('director_id', $request->director_id)->where('month', $request->month)->where('year', $request->year)->exists(); if ($exists) { return redirect()->back()->withInput()->withErrors(['error' => 'Laporan sudah ada.']); } $report = MonthlyReport::create($request->all()); return redirect()->route('reports.show', ['year' => $report->year, 'month' => $report->month, 'slug' => $report->director->slug]); }
-    public function show($year, $month, $slug) { $report = $this->findReportBySlug($year, $month, $slug); $totalExpenses = $report->transactions->sum('amount'); $remainingLimit = $report->credit_limit - $totalExpenses; $startDate = Carbon::createFromDate($year, $month, 1)->format('Y-m-d'); $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->format('Y-m-d'); return view('reports.show', compact('report', 'totalExpenses', 'remainingLimit', 'startDate', 'endDate')); }
-    public function destroy($id) { $report = MonthlyReport::findOrFail($id); $report->transactions()->delete(); $report->delete(); return redirect()->route('reports.index')->with('success', 'Laporan dihapus.'); }
-    public function storeTransaction(Request $request, $id) { $cleanAmount = str_replace('.', '', $request->amount); $request->merge(['amount' => $cleanAmount]); $request->validate(['transaction_date' => 'required|date', 'description' => 'required|string', 'amount' => 'required|numeric']); Transaction::create(['monthly_report_id' => $id, 'transaction_date' => $request->transaction_date, 'description' => $request->description, 'amount' => $request->amount]); return redirect()->back()->with('success', 'Transaksi disimpan.'); }
-    public function updateTransaction(Request $request, $id) { $cleanAmount = str_replace('.', '', $request->amount); $request->merge(['amount' => $cleanAmount]); $request->validate(['transaction_date' => 'required|date', 'description' => 'required|string', 'amount' => 'required|numeric']); $transaction = Transaction::findOrFail($id); $transaction->update(['transaction_date' => $request->transaction_date, 'description' => $request->description, 'amount' => $request->amount]); return redirect()->back()->with('success', 'Transaksi diperbarui.'); }
-    public function destroyTransaction($id) { Transaction::findOrFail($id)->delete(); return redirect()->back()->with('success', 'Transaksi dihapus.'); }
-    public function exportPdf($year, $month, $slug) { return redirect()->back(); }
-    public function exportExcel($year, $month, $slug) { return redirect()->back(); }
+    public function create() { 
+        $directors = Director::with('creditCards')->get(); 
+        return view('reports.create', compact('directors')); 
+    }
+
+    public function store(Request $request) { 
+        $cleanLimit = str_replace('.', '', $request->credit_limit); 
+        $request->merge(['credit_limit' => $cleanLimit]); 
+        $request->validate(['director_id' => 'required', 'month' => 'required|numeric', 'year' => 'required|numeric', 'credit_limit' => 'required|numeric']); 
+        
+        $exists = MonthlyReport::where('director_id', $request->director_id)
+            ->where('month', $request->month)
+            ->where('year', $request->year)->exists(); 
+        
+        if ($exists) { return redirect()->back()->withInput()->withErrors(['error' => 'Laporan sudah ada.']); } 
+        
+        $report = MonthlyReport::create($request->all()); 
+        return redirect()->route('reports.show', ['year' => $report->year, 'month' => $report->month, 'slug' => $report->director->slug]); 
+    }
+
+    public function show($year, $month, $slug) { 
+        $report = $this->findReportBySlug($year, $month, $slug); 
+        $totalExpenses = $report->transactions->sum('amount'); 
+        $remainingLimit = $report->credit_limit - $totalExpenses; 
+        
+        $startDate = Carbon::createFromDate($year, $month, 1)->format('Y-m-d');
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->format('Y-m-d');
+
+        return view('reports.show', compact('report', 'totalExpenses', 'remainingLimit', 'startDate', 'endDate')); 
+    }
+
+    public function destroy($id) { 
+        $report = MonthlyReport::findOrFail($id); 
+        $report->transactions()->delete(); 
+        $report->delete(); 
+        return redirect()->route('reports.index')->with('success', 'Laporan dihapus.'); 
+    }
+
+    public function storeTransaction(Request $request, $id) { 
+        $cleanAmount = str_replace('.', '', $request->amount); 
+        $request->merge(['amount' => $cleanAmount]); 
+        $request->validate(['transaction_date' => 'required|date', 'description' => 'required|string', 'amount' => 'required|numeric']); 
+        Transaction::create(['monthly_report_id' => $id, 'transaction_date' => $request->transaction_date, 'description' => $request->description, 'amount' => $request->amount]); 
+        return redirect()->back()->with('success', 'Transaksi disimpan.'); 
+    }
+
+    public function updateTransaction(Request $request, $id) { 
+        $cleanAmount = str_replace('.', '', $request->amount); 
+        $request->merge(['amount' => $cleanAmount]); 
+        $request->validate(['transaction_date' => 'required|date', 'description' => 'required|string', 'amount' => 'required|numeric']); 
+        $transaction = Transaction::findOrFail($id); 
+        $transaction->update(['transaction_date' => $request->transaction_date, 'description' => $request->description, 'amount' => $request->amount]); 
+        return redirect()->back()->with('success', 'Transaksi diperbarui.'); 
+    }
+
+    public function destroyTransaction($id) { 
+        Transaction::findOrFail($id)->delete(); 
+        return redirect()->back()->with('success', 'Transaksi dihapus.'); 
+    }
+
+    public function exportPdf($year, $month, $slug) { 
+        $report = $this->findReportBySlug($year, $month, $slug);
+        $total = $report->transactions->sum('amount');
+        $terbilang = $this->terbilang($total);
+
+        $monthName = $this->getMonthName($month);
+        $romawi = $this->getRomawi($month);
+        
+        $manualData = [
+            'rekap_no' => "Rekap/ ... -AS/{$romawi}/{$year}-DIVUM",
+            'po_no' => '...',
+            'signer1_name' => '(Nama Pejabat)',
+            'signer1_pos' => 'Menyetujui',
+            'signer2_name' => '(Nama Pejabat)',
+            'signer2_pos' => 'Mengetahui',
+        ];
+
+        $periodText = "Periode Bulan {$monthName} {$year}";
+        $filename = "{$report->director->name} - Rekap {$monthName} {$year}.pdf";
+        
+        $pdf = Pdf::loadView('reports.pdf_single', [
+            'report' => $report,
+            'terbilang' => $terbilang,
+            'manualData' => $manualData,
+            'periodText' => $periodText
+        ]);
+        return $pdf->setPaper('a4', 'portrait')->download($filename);
+    }
+
+    public function exportExcel($year, $month, $slug) { 
+        $report = $this->findReportBySlug($year, $month, $slug);
+        $total = $report->transactions->sum('amount');
+        $terbilang = $this->terbilang($total);
+
+        $monthName = $this->getMonthName($month);
+        $romawi = $this->getRomawi($month);
+
+        $manualData = [
+            'rekap_no' => "Rekap/ ... -AS/{$romawi}/{$year}-DIVUM",
+            'po_no' => '...',
+            'signer1_name' => '(Nama Pejabat)',
+            'signer1_pos' => 'Menyetujui',
+            'signer2_name' => '(Nama Pejabat)',
+            'signer2_pos' => 'Mengetahui',
+        ];
+
+        $periodText = "Periode Bulan {$monthName} {$year}";
+        $filename = "{$report->director->name} - Rekap {$monthName} {$year}.xlsx";
+
+        return Excel::download(new SingleRecapExport($report, $terbilang, $manualData, $periodText), $filename);
+    }
 }

@@ -3,7 +3,6 @@
     use Carbon\Carbon;
     Carbon::setLocale('id');
     $dateNow = Carbon::now()->translatedFormat('d F Y');
-    $bulanStr = ucfirst(strtolower($report->month_name)); 
 @endphp
 
 <table>
@@ -44,17 +43,21 @@
 
     <tr>
         <td style="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: none; text-align: center; vertical-align: middle;">1</td>
+        
         <td colspan="2" style="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: none; vertical-align: middle; wrap-text: true;">
-            Rekap Realisasi Biaya Penggunaan Corporate Card Direksi PT ASABRI (Persero) Periode Bulan {{ $bulanStr }} {{ $report->year }}, dengan rincian sebagai berikut:
+            Rekap Realisasi Biaya Penggunaan Corporate Card Direksi PT ASABRI (Persero) {{ $periodText }}, dengan rincian sebagai berikut:
         </td>
+
         <td style="border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; border-bottom: none;"></td>
     </tr>
 
     <tr>
         <td style="border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; border-top: none;"></td>
+        
         <td colspan="2" style="border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; border-top: none; vertical-align: middle; wrap-text: true;">
             {{ strtoupper($report->director->position) }} PT ASABRI (Persero)
         </td>
+
         <td style="border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; border-top: none; text-align: right; vertical-align: middle;">
             {{ number_format($report->transactions->sum('amount'), 0, ',', '.') }}
         </td>
