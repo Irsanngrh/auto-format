@@ -142,11 +142,15 @@ class ReportController extends Controller
     public function show($slug, $month, $year) { 
         $director = Director::where('slug', $slug)->firstOrFail();
 
-        $report = MonthlyReport::with(['director', 'transactions', 'creditCard'])
-            ->where('director_id', $director->id)
-            ->where('month', $month)
-            ->where('year', $year)
-            ->firstOrFail();
+        $report = MonthlyReport::with([
+            'director', 
+            'transactions' => function($q) { $q->orderBy('transaction_date', 'asc'); }, 
+            'creditCard'
+        ])
+        ->where('director_id', $director->id)
+        ->where('month', $month)
+        ->where('year', $year)
+        ->firstOrFail();
 
         $totalExpenses = $report->transactions->sum('amount'); 
         $remainingLimit = $report->credit_limit - $totalExpenses; 
@@ -218,10 +222,15 @@ class ReportController extends Controller
             $year = $sampleReport->year;
             $directorId = $sampleReport->director_id;
             
-            $reports = MonthlyReport::with(['director', 'transactions', 'creditCard'])
-                ->where('director_id', $directorId)
-                ->where('year', $year)
-                ->get();
+            $reports = MonthlyReport::with([
+                'director', 
+                'transactions' => function($q) { $q->orderBy('transaction_date', 'asc'); }, 
+                'creditCard'
+            ])
+            ->where('director_id', $directorId)
+            ->where('year', $year)
+            ->orderBy('month', 'asc')
+            ->get();
             
             $first = $reports->first();
             $director = $first->director;
@@ -232,7 +241,12 @@ class ReportController extends Controller
             $filename = "{$director->name} - Rekap Tahun {$year}";
             $rekapNoSuffix = "Rekap/...-AS/XII/{$year}-DIVUM"; 
         } else {
-            $reports = MonthlyReport::with(['director', 'transactions', 'creditCard'])->whereIn('id', $ids)->get();
+            $reports = MonthlyReport::with([
+                'director', 
+                'transactions' => function($q) { $q->orderBy('transaction_date', 'asc'); }, 
+                'creditCard'
+            ])->whereIn('id', $ids)->get();
+            
             $first = $reports->first();
             $director = $first->director;
             
@@ -248,10 +262,10 @@ class ReportController extends Controller
         $manualData = [
             'rekap_no' => $request->input('rekap_no', '-'),
             'po_no' => $request->input('po_no', '-'),
-            'signer1_name' => $request->input('signer1_name', 'Nama Pejabat'),
-            'signer1_pos' => $request->input('signer1_pos', 'Jabatan Pejabat'),
-            'signer2_name' => $request->input('signer2_name', 'Nama Pejabat'),
-            'signer2_pos' => $request->input('signer2_pos', 'Jabatan Pejabat'),
+            'signer1_name' => $request->input('signer1_name') ?: '(NAMA)',
+            'signer1_pos' => $request->input('signer1_pos') ?: '(JABATAN)',
+            'signer2_name' => $request->input('signer2_name') ?: '(NAMA)',
+            'signer2_pos' => $request->input('signer2_pos') ?: '(JABATAN)',
         ];
         
         if (is_numeric($manualData['rekap_no'])) {
@@ -269,26 +283,55 @@ class ReportController extends Controller
         }
     }
 
-    public function exportPdf($id) { 
-        $report = MonthlyReport::with(['director', 'transactions', 'creditCard'])->findOrFail($id);
+    public function exportPdf(Request $request, $id) { 
+        $report = MonthlyReport::with([
+            'director', 
+            'transactions' => function($q) { $q->orderBy('transaction_date', 'asc'); }, 
+            'creditCard'
+        ])->findOrFail($id);
+
         $total = $report->transactions->sum('amount');
         $terbilang = $this->terbilang($total);
         $monthName = $this->getMonthName($report->month);
         $romawi = $this->getRomawi($report->month);
-        $manualData = ['rekap_no' => "Rekap/ ... -AS/{$romawi}/{$report->year}-DIVUM", 'po_no' => '...', 'signer1_name' => '(Nama Pejabat)', 'signer1_pos' => 'Menyetujui', 'signer2_name' => '(Nama Pejabat)', 'signer2_pos' => 'Mengetahui'];
+  
+        $manualData = [
+            'rekap_no' => $request->input('rekap_no') ?: "Rekap/ ... -AS/{$romawi}/{$report->year}-DIVUM",
+            'po_no' => $request->input('po_no') ?: '...',
+            'signer1_name' => $request->input('signer1_name') ?: '(NAMA)',
+            'signer1_pos' => $request->input('signer1_pos') ?: '(JABATAN)',
+            'signer2_name' => $request->input('signer2_name') ?: '(NAMA)',
+            'signer2_pos' => $request->input('signer2_pos') ?: '(JABATAN)',
+        ];
+
         $periodText = "Periode Bulan {$monthName} {$report->year}";
         $filename = "{$report->director->name} - Rekap {$monthName} {$report->year}.pdf";
         $pdf = Pdf::loadView('reports.pdf_single', ['report' => $report, 'terbilang' => $terbilang, 'manualData' => $manualData, 'periodText' => $periodText]);
         return $pdf->setPaper('a4', 'portrait')->download($filename);
     }
 
-    public function exportExcel($id) { 
-        $report = MonthlyReport::with(['director', 'transactions', 'creditCard'])->findOrFail($id);
+    public function exportExcel(Request $request, $id) { 
+        $report = MonthlyReport::with([
+            'director', 
+            'transactions' => function($q) { $q->orderBy('transaction_date', 'asc'); }, 
+            'creditCard'
+        ])->findOrFail($id);
+
         $total = $report->transactions->sum('amount');
         $terbilang = $this->terbilang($total);
         $monthName = $this->getMonthName($report->month);
         $romawi = $this->getRomawi($report->month);
-        $manualData = ['rekap_no' => "Rekap/ ... -AS/{$romawi}/{$report->year}-DIVUM", 'po_no' => '...', 'signer1_name' => '(Nama Pejabat)', 'signer1_pos' => 'Menyetujui', 'signer2_name' => '(Nama Pejabat)', 'signer2_pos' => 'Mengetahui'];
+        
+
+        $manualData = [
+            'rekap_no' => $request->input('rekap_no') ?: "Rekap/ ... -AS/{$romawi}/{$report->year}-DIVUM",
+            'po_no' => $request->input('po_no') ?: '...',
+            'signer1_name' => $request->input('signer1_name') ?: '(NAMA)',
+            'signer1_pos' => $request->input('signer1_pos') ?: '(JABATAN)',
+            'signer2_name' => $request->input('signer2_name') ?: '(NAMA)',
+            'signer2_pos' => $request->input('signer2_pos') ?: '(JABATAN)',
+        ];
+
         $periodText = "Periode Bulan {$monthName} {$report->year}";
         $filename = "{$report->director->name} - Rekap {$monthName} {$report->year}.xlsx";
         return Excel::download(new SingleRecapExport($report, $terbilang, $manualData, $periodText), $filename);

@@ -1,40 +1,104 @@
 @extends('layouts.app')
 @section('content')
+
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-7">
+        
+        <div class="mb-2">
+            <a href="{{ route('directors.index') }}" class="btn btn-link text-decoration-none text-secondary ps-0 fw-medium" style="font-size: 14px;">
+                <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
+            </a>
+        </div>
+
         <div class="card-custom p-4">
-            <h5 class="mb-4">Tambah Direksi Baru</h5>
+            
+            <div class="border-bottom pb-3 mb-4">
+                <h5 class="fw-bold mb-0">Tambah Direksi Baru</h5>
+            </div>
+
             <form action="{{ route('directors.store') }}" method="POST">
                 @csrf
-                <div class="mb-3">
-                    <label class="form-label small text-muted">Nama Lengkap</label>
-                    <input type="text" name="name" class="form-control" required>
+                
+                <div class="mb-4">
+                    <label class="text-label">NAMA LENGKAP</label>
+                    <input type="text" name="name" class="form-control" placeholder="Nama Direksi" required>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label small text-muted">Jabatan</label>
-                    <input type="text" name="position" class="form-control" required>
+
+                <div class="mb-4">
+                    <label class="text-label">JABATAN</label>
+                    <input type="text" name="position" class="form-control" placeholder="Contoh: Direktur Utama" required>
                 </div>
-                <hr>
-                <label class="form-label small text-muted mb-2">Kartu Kredit (Bisa lebih dari satu)</label>
-                <div id="cc-wrapper">
-                    <div class="row mb-2 g-2">
-                        <div class="col-4"><input type="text" name="bank_name[]" class="form-control" placeholder="Nama Bank (misal: BNI)" required></div>
-                        <div class="col-8"><input type="text" name="card_number[]" class="form-control" placeholder="Nomor Kartu" required></div>
+
+                <div class="mb-5">
+                    <label class="text-label mb-2">KARTU KREDIT (OPSIONAL)</label>
+                    <div id="cc-wrapper">
+                        <div class="row g-2 mb-2 cc-row">
+                            <div class="col-5">
+                                <input type="text" name="bank_name[]" class="form-control" placeholder="Nama Bank">
+                            </div>
+                            <div class="col-7 d-flex gap-2">
+                                <input type="text" name="card_number[]" class="form-control" placeholder="Nomor Kartu">
+                                <button type="button" class="btn btn-light border text-secondary px-2" onclick="removeCC(this)" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
+                    <button type="button" class="btn btn-sm btn-light border text-secondary mt-1 w-100" onclick="addCC()">
+                        <i class="bi bi-plus-lg me-1"></i> Tambah Kartu Lain
+                    </button>
                 </div>
-                <button type="button" class="btn btn-sm btn-light border mb-3" onclick="addCC()">+ Tambah Kartu Lain</button>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Simpan</button>
-                    <a href="{{ route('directors.index') }}" class="btn btn-light">Batal</a>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary py-2">Simpan Direksi</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
 <script>
-function addCC() {
-    let html = `<div class="row mb-2 g-2"><div class="col-4"><input type="text" name="bank_name[]" class="form-control" placeholder="Nama Bank"></div><div class="col-8"><input type="text" name="card_number[]" class="form-control" placeholder="Nomor Kartu"></div></div>`;
-    document.getElementById('cc-wrapper').insertAdjacentHTML('beforeend', html);
-}
+    function addCC() {
+        let wrapper = document.getElementById('cc-wrapper');
+        let div = document.createElement('div');
+        div.className = 'row g-2 mb-2 cc-row';
+        div.innerHTML = `
+            <div class="col-5">
+                <input type="text" name="bank_name[]" class="form-control" placeholder="Nama Bank">
+            </div>
+            <div class="col-7 d-flex gap-2">
+                <input type="text" name="card_number[]" class="form-control" placeholder="Nomor Kartu">
+                <button type="button" class="btn btn-light border text-danger px-2" onclick="removeCC(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        wrapper.appendChild(div);
+        checkRows();
+    }
+
+    function removeCC(btn) {
+        let rows = document.querySelectorAll('.cc-row');
+        if (rows.length > 1) {
+            btn.closest('.row').remove();
+        }
+        checkRows();
+    }
+
+    function checkRows() {
+        let rows = document.querySelectorAll('.cc-row');
+        rows.forEach(row => {
+            let btn = row.querySelector('button');
+            if (rows.length === 1) {
+                btn.disabled = true;
+                btn.classList.remove('text-danger');
+                btn.classList.add('text-secondary');
+            } else {
+                btn.disabled = false;
+                btn.classList.add('text-danger');
+                btn.classList.remove('text-secondary');
+            }
+        });
+    }
 </script>
 @endsection
