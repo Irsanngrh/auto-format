@@ -4,6 +4,7 @@
     <div class="col-md-7">
         <div class="card-custom p-4">
             <h4 class="mb-4">Edit Properti Laporan</h4>
+            @if(session('error'))<div class="alert alert-danger small mb-4">{{ session('error') }}</div>@endif
             <form action="{{ route('reports.update', $report->id) }}" method="POST">
                 @csrf @method('PUT')
                 <div class="mb-4"><label class="text-label">DIREKTUR</label><input type="text" class="form-control bg-light" value="{{ $report->director->name }}" readonly></div>

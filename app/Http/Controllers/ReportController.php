@@ -29,6 +29,16 @@ class ReportController extends Controller
         return [1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April', 5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus', 9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'][$m] ?? '';
     }
 
+    private function getRomawi($m) {
+        return [1=>'I', 2=>'II', 3=>'III', 4=>'IV', 5=>'V', 6=>'VI', 7=>'VII', 8=>'VIII', 9=>'IX', 10=>'X', 11=>'XI', 12=>'XII'][$m] ?? 'I';
+    }
+
+    private function generateRekapNo($input, $month, $year) {
+        $num = $input ?: '...';
+        $romawi = $this->getRomawi($month);
+        return "Rekap/{$num}-AS/{$romawi}/{$year}-SEKPER";
+    }
+
     public function index(Request $request)
     {
         $availableYears = MonthlyReport::select('year')->distinct()->orderBy('year', 'desc')->pluck('year');
@@ -118,6 +128,14 @@ class ReportController extends Controller
     public function update(Request $request, $id) {
         $request->merge(['credit_limit' => str_replace('.', '', $request->credit_limit)]); 
         $report = MonthlyReport::with(['director', 'creditCard'])->findOrFail($id);
+        
+        $exists = MonthlyReport::where('director_id', $report->director_id)
+            ->where('month', $request->month)->where('year', $request->year)
+            ->where('credit_card_id', $request->credit_card_id)
+            ->where('id', '!=', $id)->exists();
+
+        if ($exists) return redirect()->back()->withInput()->with('error', 'Gagal update! Laporan sudah ada.');
+
         $report->update($request->all());
         $report->refresh();
         return redirect()->route('reports.show', ['slug' => $report->director->slug, 'month' => $report->month, 'year' => $report->year, 'card_last_digits' => substr($report->creditCard->card_number, -4)])->with('success', 'Laporan diperbarui.');
@@ -147,13 +165,53 @@ class ReportController extends Controller
         return redirect()->back()->with('success', 'Transaksi dihapus.'); 
     }
 
+    public function bulkAction(Request $request)
+    {
+        $action = $request->input('action');
+        $exportType = $request->input('type'); 
+        $ids = $request->input('report_ids');
+        
+        if (!$ids || count($ids) == 0) return redirect()->back()->with('error', 'Pilih minimal satu laporan.');
+        
+        if ($exportType == 'yearly') {
+            $sampleReport = MonthlyReport::findOrFail($ids[0]);
+            $year = $sampleReport->year;
+            $reports = MonthlyReport::with(['director', 'transactions' => fn($q) => $q->orderBy('transaction_date', 'asc'), 'creditCard'])
+            ->where('director_id', $sampleReport->director_id)->where('year', $year)->orderBy('month', 'asc')->get();
+            $first = $reports->first();
+            $periodText = "Periode Tahun " . $year;
+            $filename = "{$first->director->name} - Tahun {$year}";
+            $rekapNo = $this->generateRekapNo($request->input('rekap_no'), 12, $year); 
+        } else {
+            $reports = MonthlyReport::with(['director', 'transactions' => fn($q) => $q->orderBy('transaction_date', 'asc'), 'creditCard'])->whereIn('id', $ids)->get();
+            $first = $reports->first();
+            $periodText = "Periode Bulan " . $this->getMonthName($first->month) . " {$first->year}";
+            $last4 = substr($first->creditCard->card_number, -4);
+            $filename = "{$first->director->name} - {$this->getMonthName($first->month)} {$first->year} - CC {$last4}";
+            $rekapNo = $this->generateRekapNo($request->input('rekap_no'), $first->month, $first->year);
+        }
+
+        $manualData = ['rekap_no' => $rekapNo, 'po_no' => $request->input('po_no'), 'signer1_name' => $request->input('signer1_name') ?: '(NAMA)', 'signer1_pos' => $request->input('signer1_pos') ?: '(JABATAN)', 'signer2_name' => $request->input('signer2_name') ?: '(NAMA)', 'signer2_pos' => $request->input('signer2_pos') ?: '(JABATAN)'];
+        $total = $first->transactions->sum('amount');
+        $terbilang = $this->terbilang($total);
+        
+        if ($action == 'excel') {
+            return Excel::download(new SingleRecapExport($first, $terbilang, $manualData, $periodText), $filename . '.xlsx');
+        } else {
+            return Pdf::loadView('reports.pdf_single', ['report' => $first, 'terbilang' => $terbilang, 'manualData' => $manualData, 'periodText' => $periodText])->setPaper('a4', 'portrait')->download($filename . '.pdf');
+        }
+    }
+
     public function exportPdf(Request $request, $id) { 
         $report = MonthlyReport::with(['director', 'transactions' => fn($q) => $q->orderBy('transaction_date', 'asc'), 'creditCard'])->findOrFail($id);
         $total = $report->transactions->sum('amount');
         $terbilang = $this->terbilang($total);
-        $manualData = ['rekap_no' => $request->input('rekap_no'), 'po_no' => $request->input('po_no'), 'signer1_name' => $request->input('signer1_name') ?: '(NAMA)', 'signer1_pos' => $request->input('signer1_pos') ?: '(JABATAN)', 'signer2_name' => $request->input('signer2_name') ?: '(NAMA)', 'signer2_pos' => $request->input('signer2_pos') ?: '(JABATAN)'];
+        $rekapNo = $this->generateRekapNo($request->input('rekap_no'), $report->month, $report->year);
+        
+        $manualData = ['rekap_no' => $rekapNo, 'po_no' => $request->input('po_no'), 'signer1_name' => $request->input('signer1_name') ?: '(NAMA)', 'signer1_pos' => $request->input('signer1_pos') ?: '(JABATAN)', 'signer2_name' => $request->input('signer2_name') ?: '(NAMA)', 'signer2_pos' => $request->input('signer2_pos') ?: '(JABATAN)'];
         $periodText = "Periode Bulan " . $this->getMonthName($report->month) . " {$report->year}";
-        $filename = "{$report->director->name} - Rekap {$report->month} {$report->year}.pdf";
+        $filename = "{$report->director->name} - {$this->getMonthName($report->month)} {$report->year} - CC " . substr($report->creditCard->card_number, -4) . ".pdf";
+        
         return Pdf::loadView('reports.pdf_single', compact('report', 'terbilang', 'manualData', 'periodText'))->setPaper('a4', 'portrait')->download($filename);
     }
 
@@ -161,8 +219,12 @@ class ReportController extends Controller
         $report = MonthlyReport::with(['director', 'transactions' => fn($q) => $q->orderBy('transaction_date', 'asc'), 'creditCard'])->findOrFail($id);
         $total = $report->transactions->sum('amount');
         $terbilang = $this->terbilang($total);
-        $manualData = ['rekap_no' => $request->input('rekap_no'), 'po_no' => $request->input('po_no'), 'signer1_name' => $request->input('signer1_name') ?: '(NAMA)', 'signer1_pos' => $request->input('signer1_pos') ?: '(JABATAN)', 'signer2_name' => $request->input('signer2_name') ?: '(NAMA)', 'signer2_pos' => $request->input('signer2_pos') ?: '(JABATAN)'];
+        $rekapNo = $this->generateRekapNo($request->input('rekap_no'), $report->month, $report->year);
+
+        $manualData = ['rekap_no' => $rekapNo, 'po_no' => $request->input('po_no'), 'signer1_name' => $request->input('signer1_name') ?: '(NAMA)', 'signer1_pos' => $request->input('signer1_pos') ?: '(JABATAN)', 'signer2_name' => $request->input('signer2_name') ?: '(NAMA)', 'signer2_pos' => $request->input('signer2_pos') ?: '(JABATAN)'];
         $periodText = "Periode Bulan " . $this->getMonthName($report->month) . " {$report->year}";
-        return Excel::download(new SingleRecapExport($report, $terbilang, $manualData, $periodText), "{$report->director->name} - Rekap.xlsx");
+        $filename = "{$report->director->name} - {$this->getMonthName($report->month)} {$report->year} - CC " . substr($report->creditCard->card_number, -4) . ".xlsx";
+        
+        return Excel::download(new SingleRecapExport($report, $terbilang, $manualData, $periodText), $filename);
     }
 }

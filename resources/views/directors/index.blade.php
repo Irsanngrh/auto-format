@@ -14,7 +14,10 @@
                 <td class="text-secondary">{{ $d->position }}</td>
                 <td>
                     @foreach($d->creditCards as $cc)
-                        <div class="d-flex align-items-center gap-2"><span class="badge-clean">{{ $cc->bank_name }}</span><span class="small font-monospace text-muted">{{ $cc->card_number }}</span></div>
+                        <div class="d-flex align-items-center py-1">
+                            <span class="badge-clean text-secondary me-3" style="min-width: 50px; text-align: center;">{{ $cc->bank_name }}</span>
+                            <span class="small font-monospace text-muted" style="letter-spacing: 0.5px;">{{ $cc->card_number }}</span>
+                        </div>
                     @endforeach
                 </td>
                 <td class="text-end pe-4">

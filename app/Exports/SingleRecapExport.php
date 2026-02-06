@@ -49,9 +49,9 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
     {
         return [
             'A' => 6,   
-            'B' => 20,  
-            'C' => 30,   
-            'D' => 25,  
+            'B' => 50,  
+            'C' => 2,   
+            'D' => 22,  
         ];
     }
 
@@ -75,13 +75,15 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('B')->getAlignment()->setWrapText(true);
-        $sheet->getStyle('C')->getAlignment()->setWrapText(true);
-        $sheet->getStyle('D')->getAlignment()->setWrapText(true);
+        // Global Style: Font Arial 11 & Vertical Center (Middle Align)
         $sheet->getParent()->getDefaultStyle()->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
         $sheet->getParent()->getDefaultStyle()->getFont()->setName('Arial');
         $sheet->getParent()->getDefaultStyle()->getFont()->setSize(11);
         $sheet->getParent()->getDefaultStyle()->getFont()->setBold(false);
+        
+        $sheet->getStyle('B')->getAlignment()->setWrapText(true);
+        $sheet->getStyle('C')->getAlignment()->setWrapText(true);
+        $sheet->getStyle('D')->getAlignment()->setWrapText(true);
     }
 
     public function registerEvents(): array
@@ -92,18 +94,17 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
                 $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_PORTRAIT);
                 $sheet->getPageSetup()->setFitToWidth(1);
                 $sheet->getPageSetup()->setFitToHeight(0);
-
+                
+                // Menghitung tinggi baris otomatis untuk teks uraian panjang
                 $text = "Rekap Realisasi Biaya Penggunaan Corporate Card Direksi PT ASABRI (Persero) " . 
                         $this->periodText . ", dengan rincian sebagai berikut:";
                 
-                $charLength = strlen($text);
-                $charsPerLine = 50; 
-                $estimatedTextLines = ceil($charLength / $charsPerLine);
+                $charsPerLine = 55; 
+                $numLines = ceil(strlen($text) / $charsPerLine);
+                $rowHeight = ($numLines * 15) + 30; 
                 
-                $calculatedHeight = ($estimatedTextLines * 15) + 10;
-                $sheet->getRowDimension(10)->setRowHeight(max($calculatedHeight, 30));
-
-                $sheet->getRowDimension(11)->setRowHeight(35);
+                // Set Tinggi Baris Uraian (Row 9)
+                $sheet->getRowDimension(9)->setRowHeight($rowHeight);
             },
         ];
     }
