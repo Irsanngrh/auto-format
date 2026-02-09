@@ -3,7 +3,6 @@
 <head>
     <title>Rekap Penggunaan</title>
     <style>
-        /* REVISI 5: Font diperkecil menjadi 10pt agar tidak terlalu besar */
         body { font-family: Arial, sans-serif; font-size: 10pt; margin: 30px; line-height: 1.3; }
         
         .text-center { text-align: center; }
@@ -14,7 +13,6 @@
         
         .header-table { width: 100%; margin-bottom: 0px; }
         
-        /* REVISI 3: Margin top ditambah agar tidak dekat logo */
         .title-block { text-align: center; margin-bottom: 30px; margin-top: 30px; }
         .title-row { font-size: 11pt; margin: 2px 0; text-transform: uppercase; }
         

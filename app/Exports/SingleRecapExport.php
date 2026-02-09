@@ -75,8 +75,8 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
 
     public function styles(Worksheet $sheet)
     {
-        // Global Style: Font Arial 11 & Vertical Center (Middle Align)
         $sheet->getParent()->getDefaultStyle()->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        
         $sheet->getParent()->getDefaultStyle()->getFont()->setName('Arial');
         $sheet->getParent()->getDefaultStyle()->getFont()->setSize(11);
         $sheet->getParent()->getDefaultStyle()->getFont()->setBold(false);
@@ -95,16 +95,25 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
                 $sheet->getPageSetup()->setFitToWidth(1);
                 $sheet->getPageSetup()->setFitToHeight(0);
                 
-                // Menghitung tinggi baris otomatis untuk teks uraian panjang
                 $text = "Rekap Realisasi Biaya Penggunaan Corporate Card Direksi PT ASABRI (Persero) " . 
                         $this->periodText . ", dengan rincian sebagai berikut:";
                 
                 $charsPerLine = 55; 
-                $numLines = ceil(strlen($text) / $charsPerLine);
-                $rowHeight = ($numLines * 15) + 30; 
                 
-                // Set Tinggi Baris Uraian (Row 9)
+                // Mencegah DivisionByZero
+                if ($charsPerLine > 0) {
+                    $numLines = ceil(strlen($text) / $charsPerLine);
+                } else {
+                    $numLines = 1;
+                }
+
+                $rowHeight = ($numLines * 13) + 10; 
+                
                 $sheet->getRowDimension(9)->setRowHeight($rowHeight);
+                
+                $sheet->getRowDimension(10)->setRowHeight(40);
+                
+                $sheet->getStyle('A9:D10')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
             },
         ];
     }

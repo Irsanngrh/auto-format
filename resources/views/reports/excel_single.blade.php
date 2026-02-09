@@ -61,17 +61,16 @@
     <tr height="15"><td colspan="4"></td></tr>
 
     <tr>
-        <td colspan="2" style="text-align: left; padding-left: 30px;">Menyetujui,</td>
-        <td></td>
-        <td style="text-align: center;">Jakarta, {{ $dateNow }}</td>
+        <td colspan="2" style="text-align: center; vertical-align: middle;">Menyetujui,</td>
+        
+        <td colspan="2" style="text-align: center; vertical-align: middle;">Jakarta, {{ $dateNow }}</td>
     </tr>
 
     <tr height="20"><td colspan="4"></td></tr>
 
     <tr>
-        <td colspan="2" style="text-align: left; padding-left: 30px;">{{ $manualData['signer1_pos'] }}</td>
-        <td></td>
-        <td style="text-align: center;">{{ $manualData['signer2_pos'] }}</td>
+        <td colspan="2" style="text-align: center; vertical-align: middle;">{{ $manualData['signer1_pos'] }}</td>
+        <td colspan="2" style="text-align: center; vertical-align: middle;">{{ $manualData['signer2_pos'] }}</td>
     </tr>
 
     <tr height="20"><td colspan="4"></td></tr>
@@ -80,9 +79,8 @@
     <tr height="20"><td colspan="4"></td></tr>
 
     <tr>
-        <td colspan="2" style="text-align: left; padding-left: 30px;">{{ $manualData['signer1_name'] }}</td>
-        <td></td>
-        <td style="text-align: center;">{{ $manualData['signer2_name'] }}</td>
+        <td colspan="2" style="text-align: center; vertical-align: middle;">{{ $manualData['signer1_name'] }}</td>
+        <td colspan="2" style="text-align: center; vertical-align: middle;">{{ $manualData['signer2_name'] }}</td>
     </tr>
 
     <tr height="30"><td colspan="4"></td></tr>
