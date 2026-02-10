@@ -100,7 +100,6 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
                 
                 $charsPerLine = 55; 
                 
-                // Mencegah DivisionByZero
                 if ($charsPerLine > 0) {
                     $numLines = ceil(strlen($text) / $charsPerLine);
                 } else {
