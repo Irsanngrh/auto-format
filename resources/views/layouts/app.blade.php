@@ -17,8 +17,26 @@
         .card-custom { background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02); border-radius: 8px; }
         h3, h4, h5 { font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
         .text-label { font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; margin-bottom: 6px; }
-        .btn-filter { background: #FFF; border: 1px solid #E0E0DE; color: #37352F; font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; min-width: 160px; }
-        .btn-filter:hover { background: #F7F7F5; }
+
+        .btn-filter { 
+            background: #FFF; 
+            border: 1px solid #E0E0DE; 
+            color: #37352F; 
+            font-size: 13px; 
+            font-weight: 500; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            min-width: 160px; 
+            transition: all 0.2s;
+        }
+        .btn-filter:hover { 
+            background: #F7F7F5; 
+            border-color: #B0B0AF; 
+        }
+
         .dropdown-menu-filter { border: 1px solid #E9E9E7; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 6px; padding: 4px; margin-top: 4px !important; min-width: 180px; max-height: 300px; overflow-y: auto; }
         .dropdown-item { font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 4px; margin-bottom: 1px; }
         .dropdown-item:hover { background: #F0F0EF; }
@@ -39,7 +57,11 @@
     <nav class="navbar sticky-top">
         <div class="container d-flex justify-content-start gap-4 py-0">
             <div class="navbar-brand d-flex align-items-center gap-2">
-                <img src="{{ asset('images/logo-asabri.png') }}" alt="Logo ASABRI" height="30">
+                @if(file_exists(public_path('images/logo-asabri.png')))
+                    <img src="{{ asset('images/logo-asabri.png') }}" alt="Logo ASABRI" height="30">
+                @else
+                    <span class="fw-bold">ASABRI Report</span>
+                @endif
             </div>
             <div class="vr mx-2 text-muted opacity-25"></div>
             <a href="{{ route('reports.index') }}" class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">Laporan</a>

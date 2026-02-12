@@ -76,11 +76,9 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
     public function styles(Worksheet $sheet)
     {
         $sheet->getParent()->getDefaultStyle()->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-        
         $sheet->getParent()->getDefaultStyle()->getFont()->setName('Arial');
         $sheet->getParent()->getDefaultStyle()->getFont()->setSize(11);
         $sheet->getParent()->getDefaultStyle()->getFont()->setBold(false);
-        
         $sheet->getStyle('B')->getAlignment()->setWrapText(true);
         $sheet->getStyle('C')->getAlignment()->setWrapText(true);
         $sheet->getStyle('D')->getAlignment()->setWrapText(true);
@@ -105,13 +103,10 @@ class SingleRecapExport implements FromView, WithTitle, WithDrawings, WithColumn
                 } else {
                     $numLines = 1;
                 }
-
+                
                 $rowHeight = ($numLines * 13) + 10; 
-                
                 $sheet->getRowDimension(9)->setRowHeight($rowHeight);
-                
-                $sheet->getRowDimension(10)->setRowHeight(40);
-                
+                $sheet->getRowDimension(10)->setRowHeight(45);
                 $sheet->getStyle('A9:D10')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
             },
         ];

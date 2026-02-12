@@ -14,6 +14,7 @@
         <div class="dropdown"><button class="btn btn-filter dropdown-toggle" type="button" data-bs-toggle="dropdown">{{ $filterType == 'monthly' ? 'Rekap Bulanan' : 'Rekap Tahunan' }}</button><ul class="dropdown-menu dropdown-menu-filter"><li><a class="dropdown-item" href="#" onclick="setFilter('type', 'monthly')">Rekap Bulanan</a></li><li><a class="dropdown-item" href="#" onclick="setFilter('type', 'yearly')">Rekap Tahunan</a></li></ul></div>
     </form>
 </div>
+
 <div class="card-custom overflow-hidden">
     <table class="table-notion">
         <thead><tr><th class="ps-4">Nama Direksi</th><th>Periode</th><th>Detail Kartu</th><th>Pagu</th><th>Realisasi</th><th>Sisa</th><th class="text-end pe-4">Aksi</th></tr></thead>
@@ -21,17 +22,22 @@
             @foreach($reports as $r)
             <tr>
                 <td class="ps-4 fw-bold text-dark">{{ $r->director->name }}</td>
-                <td><span class="badge-clean">{{ $filterType == 'yearly' ? $r->year : $r->month_name . ' ' . $r->year }}</span></td>
+                <td><span class="badge-clean">{{ $filterType == 'yearly' ? $r->year : ($months[$r->month] ?? '') . ' ' . $r->year }}</span></td>
                 <td>@if($r->is_aggregate)<span class="text-muted small">-</span>@else<div class="d-flex flex-column" style="line-height: 1.2;"><span class="small fw-medium">{{ $r->creditCard->bank_name }}</span><span class="small text-secondary font-monospace">{{ $r->creditCard->card_number }}</span></div>@endif</td>
                 <td class="text-secondary small">{{ number_format($r->credit_limit, 0, ',', '.') }}</td>
                 <td class="fw-bold small">{{ number_format($r->total_expenses, 0, ',', '.') }}</td>
                 <td class="text-success small fw-medium">{{ number_format($r->remaining_limit, 0, ',', '.') }}</td>
                 <td class="text-end pe-4">
                     @if(!$r->is_aggregate)
+                        @php
+                            $monthName = $months[$r->month] ?? '';
+                            $last4 = substr($r->creditCard->card_number, -4);
+                            $deleteLabel = "{$r->director->name}<br>{$monthName} {$r->year}<br>CC {$last4}";
+                        @endphp
                         <div class="d-flex justify-content-end gap-1">
-                            <button class="btn-icon" onclick="openDownloadModal({{ $r->id }})"><i class="bi bi-download"></i></button>
-                            <a href="{{ route('reports.show', ['slug' => $r->director->slug, 'month' => $r->month, 'year' => $r->year, 'card_last_digits' => substr($r->creditCard->card_number, -4)]) }}" class="btn-icon text-primary"><i class="bi bi-eye"></i></a>
-                            <button class="btn-icon text-danger" onclick="confirmDelete({{ $r->id }}, '{{ $r->director->name }}')"><i class="bi bi-trash"></i></button>
+                            <button class="btn-icon" onclick="openDownloadModal({{ $r->id }})" data-bs-toggle="tooltip" title="Download Options"><i class="bi bi-download"></i></button>
+                            <a href="{{ route('reports.show', ['slug' => $r->director->slug, 'month' => $r->month, 'year' => $r->year, 'card_last_digits' => substr($r->creditCard->card_number, -4)]) }}" class="btn-icon text-primary" data-bs-toggle="tooltip" title="Detail"><i class="bi bi-eye"></i></a>
+                            <button class="btn-icon text-danger" onclick="confirmDelete({{ $r->id }}, '{{ $deleteLabel }}')" data-bs-toggle="tooltip" title="Hapus"><i class="bi bi-trash"></i></button>
                         </div>
                     @endif
                 </td>
@@ -40,13 +46,72 @@
         </tbody>
     </table>
 </div>
-<div class="modal fade" id="deleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><form id="deleteForm" method="POST" class="modal-content">@csrf @method('DELETE')<div class="modal-body text-center p-4"><div class="mb-3 text-secondary"><i class="bi bi-trash3" style="font-size: 32px;"></i></div><h6 class="fw-bold mb-2">Hapus Laporan?</h6><p class="text-secondary small mb-4">Laporan <strong id="delName"></strong> akan dihapus.</p><div class="d-flex gap-2"><button type="button" class="btn btn-light w-100 border" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-danger w-100">Hapus</button></div></div></form></div></div>
-<form id="downloadForm" method="GET"><div class="modal fade" id="downloadModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title h6">Export Dokumen</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3 mb-2"><div class="col-6"><input type="text" name="rekap_no" class="form-control" placeholder="No Rekap"></div><div class="col-6"><input type="text" name="po_no" class="form-control" placeholder="No PO"></div></div><div class="row g-3 mb-2"><div class="col-6"><input type="text" name="signer1_pos" class="form-control mb-1" placeholder="Jabatan (Kiri)"><input type="text" name="signer1_name" class="form-control" placeholder="Nama (Kiri)"></div><div class="col-6"><input type="text" name="signer2_pos" class="form-control mb-1" placeholder="Jabatan (Kanan)"><input type="text" name="signer2_name" class="form-control" placeholder="Nama (Kanan)"></div></div><div class="d-flex gap-2"><button type="button" onclick="submitDownload('pdf')" class="btn btn-danger w-100">PDF</button><button type="button" onclick="submitDownload('excel')" class="btn btn-success w-100">Excel</button></div></div></div></div></div></form>
+
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <form id="deleteForm" method="POST" class="modal-content">
+            @csrf @method('DELETE')
+            <div class="modal-body text-center p-4">
+                <div class="mb-3 text-secondary"><i class="bi bi-trash3" style="font-size: 32px;"></i></div>
+                <h6 class="fw-bold mb-2">Hapus Laporan?</h6>
+                
+                <div id="delName" class="text-dark my-3 border p-2 rounded bg-light" style="line-height: 1.4; font-size: 12px;"></div>
+                
+                <p class="text-secondary small mb-4" style="font-size: 12px;">
+                    Tindakan ini tidak dapat dibatalkan.<br>Data akan dihapus secara <strong>permanen</strong>.
+                </p>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light w-100 border" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger w-100">Hapus</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form id="downloadForm" method="GET">
+    <div class="modal fade" id="downloadModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title h6">Export Dokumen</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-2">
+                        <div class="col-6"><input type="text" name="rekap_no" class="form-control" placeholder="No Rekap"></div>
+                        <div class="col-6"><input type="text" name="po_no" class="form-control" placeholder="No PO"></div>
+                    </div>
+                    <div class="row g-3 mb-2">
+                        <div class="col-6"><input type="text" name="signer1_pos" class="form-control mb-1" placeholder="Jabatan (Kiri)"><input type="text" name="signer1_name" class="form-control" placeholder="Nama (Kiri)"></div>
+                        <div class="col-6"><input type="text" name="signer2_pos" class="form-control mb-1" placeholder="Jabatan (Kanan)"><input type="text" name="signer2_name" class="form-control" placeholder="Nama (Kanan)"></div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="button" onclick="submitDownload('pdf')" class="btn btn-danger flex-fill"><i class="bi bi-file-pdf me-2"></i>PDF</button>
+                        <button type="button" onclick="submitDownload('excel')" class="btn btn-success flex-fill"><i class="bi bi-file-excel me-2"></i>Excel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
 <script>
     function setFilter(n, v) { document.getElementById('input_' + n).value = v; document.getElementById('filterForm').submit(); }
-    function confirmDelete(id, name) { document.getElementById('delName').textContent = name; document.getElementById('deleteForm').action = '/reports/' + id; new bootstrap.Modal(document.getElementById('deleteModal')).show(); }
+    
+    function confirmDelete(id, label) { 
+        document.getElementById('delName').innerHTML = label; 
+        document.getElementById('deleteForm').action = '/reports/' + id; 
+        new bootstrap.Modal(document.getElementById('deleteModal')).show(); 
+    }
+    
     let currentDownloadId = 0;
     function openDownloadModal(id) { currentDownloadId = id; new bootstrap.Modal(document.getElementById('downloadModal')).show(); }
-    function submitDownload(type) { document.getElementById('downloadForm').action = '/reports/' + currentDownloadId + '/' + type; document.getElementById('downloadForm').submit(); }
+    function submitDownload(type) { document.getElementById('downloadForm').action = '/reports/' + currentDownloadId + '/export/' + type; document.getElementById('downloadForm').submit(); }
+    
+    document.addEventListener("DOMContentLoaded", function(){ 
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')); 
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) { 
+            return new bootstrap.Tooltip(tooltipTriggerEl); 
+        }); 
+    });
 </script>
-@endsection 
+@endsection

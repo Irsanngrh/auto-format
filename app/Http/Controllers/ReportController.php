@@ -36,7 +36,7 @@ class ReportController extends Controller
     private function generateRekapNo($input, $month, $year) {
         $num = $input ?: '...';
         $romawi = $this->getRomawi($month);
-        return "Rekap/{$num}-AS/{$romawi}/{$year}-SEKPER";
+        return "REKAP/KU.02.02/{$num}/{$romawi}/{$year}-SEKPER";
     }
 
     public function index(Request $request)
@@ -127,18 +127,27 @@ class ReportController extends Controller
 
     public function update(Request $request, $id) {
         $request->merge(['credit_limit' => str_replace('.', '', $request->credit_limit)]); 
-        $report = MonthlyReport::with(['director', 'creditCard'])->findOrFail($id);
         
-        $exists = MonthlyReport::where('director_id', $report->director_id)
-            ->where('month', $request->month)->where('year', $request->year)
-            ->where('credit_card_id', $request->credit_card_id)
-            ->where('id', '!=', $id)->exists();
+        $report = MonthlyReport::with(['director', 'creditCard'])->findOrFail($id);
 
-        if ($exists) return redirect()->back()->withInput()->with('error', 'Gagal update! Laporan sudah ada.');
+        $exists = MonthlyReport::where('director_id', $report->director_id)
+            ->where('month', $request->month)
+            ->where('year', $request->year)
+            ->where('credit_card_id', $request->credit_card_id)
+            ->where('id', '!=', $id) 
+            ->exists();
+
+        if ($exists) return redirect()->back()->withInput()->with('error', 'Gagal update! Laporan untuk periode dan kartu kredit tersebut sudah ada.');
 
         $report->update($request->all());
         $report->refresh();
-        return redirect()->route('reports.show', ['slug' => $report->director->slug, 'month' => $report->month, 'year' => $report->year, 'card_last_digits' => substr($report->creditCard->card_number, -4)])->with('success', 'Laporan diperbarui.');
+        
+        return redirect()->route('reports.show', [
+            'slug' => $report->director->slug, 
+            'month' => $report->month, 
+            'year' => $report->year, 
+            'card_last_digits' => substr($report->creditCard->card_number, -4)
+        ])->with('success', 'Laporan diperbarui.');
     }
 
     public function destroy($id) { 
@@ -226,5 +235,18 @@ class ReportController extends Controller
         $filename = "{$report->director->name} - {$this->getMonthName($report->month)} {$report->year} - CC " . substr($report->creditCard->card_number, -4) . ".xlsx";
         
         return Excel::download(new SingleRecapExport($report, $terbilang, $manualData, $periodText), $filename);
+    }
+    
+    public function previewPdf(Request $request, $id) { 
+        $report = MonthlyReport::with(['director', 'transactions' => fn($q) => $q->orderBy('transaction_date', 'asc'), 'creditCard'])->findOrFail($id);
+        $total = $report->transactions->sum('amount');
+        $terbilang = $this->terbilang($total);
+        $rekapNo = $this->generateRekapNo($request->input('rekap_no'), $report->month, $report->year);
+        
+        $manualData = ['rekap_no' => $rekapNo, 'po_no' => $request->input('po_no'), 'signer1_name' => $request->input('signer1_name') ?: '(NAMA)', 'signer1_pos' => $request->input('signer1_pos') ?: '(JABATAN)', 'signer2_name' => $request->input('signer2_name') ?: '(NAMA)', 'signer2_pos' => $request->input('signer2_pos') ?: '(JABATAN)'];
+        $periodText = "Periode Bulan " . $this->getMonthName($report->month) . " {$report->year}";
+        $filename = "PREVIEW - {$report->director->name} - {$this->getMonthName($report->month)} {$report->year}.pdf";
+        
+        return Pdf::loadView('reports.pdf_single', compact('report', 'terbilang', 'manualData', 'periodText'))->setPaper('a4', 'portrait')->stream($filename);
     }
 }

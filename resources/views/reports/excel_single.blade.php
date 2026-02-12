@@ -14,7 +14,7 @@
     <tr height="20"><td colspan="4"></td></tr>
 
     <tr><td colspan="4" style="text-align: center; font-size: 11pt;">DAFTAR REKAPITULASI PENGELUARAN</td></tr>
-    <tr><td colspan="4" style="text-align: center; font-size: 11pt;">Rekapitulasi Pengeluaran Divisi Umum</td></tr>
+    <tr><td colspan="4" style="text-align: center; font-size: 11pt;">Rekapitulasi Pengeluaran Divisi Sekretariat Perusahaan</td></tr>
     <tr><td colspan="4" style="text-align: center; font-size: 11pt;">PT ASABRI (Persero)</td></tr>
     <tr><td colspan="4" style="text-align: center; font-size: 11pt;">Nomor: {{ $manualData['rekap_no'] }}</td></tr>
 
@@ -62,7 +62,6 @@
 
     <tr>
         <td colspan="2" style="text-align: center; vertical-align: middle;">Menyetujui,</td>
-        
         <td colspan="2" style="text-align: center; vertical-align: middle;">Jakarta, {{ $dateNow }}</td>
     </tr>
 
