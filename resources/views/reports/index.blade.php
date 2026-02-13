@@ -35,7 +35,7 @@
                             $deleteLabel = "{$r->director->name}<br>{$monthName} {$r->year}<br>CC {$last4}";
                         @endphp
                         <div class="d-flex justify-content-end gap-1">
-                            <button class="btn-icon" onclick="openDownloadModal({{ $r->id }})" data-bs-toggle="tooltip" title="Download Options"><i class="bi bi-download"></i></button>
+                            <button class="btn-icon" onclick="openDownloadModal({{ $r->id }})" data-bs-toggle="tooltip" title="Unduh"><i class="bi bi-download"></i></button>
                             <a href="{{ route('reports.show', ['slug' => $r->director->slug, 'month' => $r->month, 'year' => $r->year, 'card_last_digits' => substr($r->creditCard->card_number, -4)]) }}" class="btn-icon text-primary" data-bs-toggle="tooltip" title="Detail"><i class="bi bi-eye"></i></a>
                             <button class="btn-icon text-danger" onclick="confirmDelete({{ $r->id }}, '{{ $deleteLabel }}')" data-bs-toggle="tooltip" title="Hapus"><i class="bi bi-trash"></i></button>
                         </div>

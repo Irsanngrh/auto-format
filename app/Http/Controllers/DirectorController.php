@@ -23,21 +23,29 @@ class DirectorController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate(['name' => 'required', 'position' => 'required']);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'position' => 'required|string|max:255',
+            'card_number' => 'nullable|array',
+            'card_number.*' => 'nullable|string|max:50',
+            'bank_name' => 'nullable|array',
+            'bank_name.*' => 'nullable|string|max:100',
+        ]);
 
-        DB::transaction(function () use ($request) {
+        DB::transaction(function () use ($validated) {
             $director = Director::create([
-                'name' => $request->name,
-                'slug' => Str::slug($request->name),
-                'position' => $request->position
+                'name' => $validated['name'],
+                'slug' => Str::slug($validated['name']),
+                'position' => $validated['position']
             ]);
 
-            if ($request->has('card_number')) {
-                foreach ($request->card_number as $index => $number) {
+            if (!empty($validated['card_number'])) {
+                $bankNames = $validated['bank_name'] ?? [];
+                foreach ($validated['card_number'] as $index => $number) {
                     if (!empty($number)) {
                         CreditCard::create([
                             'director_id' => $director->id,
-                            'bank_name' => $request->bank_name[$index] ?? 'Bank',
+                            'bank_name' => $bankNames[$index] ?? 'Bank',
                             'card_number' => $number
                         ]);
                     }
@@ -56,19 +64,28 @@ class DirectorController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate(['name' => 'required', 'position' => 'required']);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'position' => 'required|string|max:255',
+            'card_id' => 'nullable|array',
+            'card_id.*' => 'nullable|integer',
+            'card_number' => 'nullable|array',
+            'card_number.*' => 'nullable|string|max:50',
+            'bank_name' => 'nullable|array',
+            'bank_name.*' => 'nullable|string|max:100',
+        ]);
 
-        DB::transaction(function () use ($request, $id) {
+        DB::transaction(function () use ($validated, $id) {
             $director = Director::findOrFail($id);
             $director->update([
-                'name' => $request->name,
-                'slug' => Str::slug($request->name),
-                'position' => $request->position
+                'name' => $validated['name'],
+                'slug' => Str::slug($validated['name']),
+                'position' => $validated['position']
             ]);
 
-            $submittedIds = $request->input('card_id', []); 
-            $bankNames = $request->input('bank_name', []);
-            $cardNumbers = $request->input('card_number', []);
+            $submittedIds = $validated['card_id'] ?? []; 
+            $bankNames = $validated['bank_name'] ?? [];
+            $cardNumbers = $validated['card_number'] ?? [];
 
             $existingCardIds = $director->creditCards()->pluck('id')->toArray();
             $idsToDelete = array_diff($existingCardIds, $submittedIds);
